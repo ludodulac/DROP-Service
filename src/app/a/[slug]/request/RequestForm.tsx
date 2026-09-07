@@ -18,12 +18,12 @@ export default function RequestForm({ artisanId, companyName }: Props) {
     const files = form.getAll("photos").filter((value): value is File => value instanceof File && value.size > 0);
 
     if (files.length > 3) {
-      setError("Vous pouvez envoyer 3 photos maximum.");
+      setError("Vous pouvez ajouter jusqu’à 3 photos.");
       setSending(false);
       return;
     }
     if (files.some((file) => file.size > 5 * 1024 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
-      setError("Chaque photo doit être au format JPG, PNG ou WebP et faire moins de 5 Mo.");
+      setError("Une photo n’est pas au bon format ou dépasse 5 Mo. Utilisez JPG, PNG ou WebP.");
       setSending(false);
       return;
     }
@@ -44,7 +44,7 @@ export default function RequestForm({ artisanId, companyName }: Props) {
     });
 
     if (requestError) {
-      setError("La demande n’a pas pu être envoyée. Réessayez dans quelques instants.");
+      setError("Votre demande n’a pas pu être envoyée. Vérifiez votre connexion puis réessayez.");
       setSending(false);
       return;
     }
@@ -61,21 +61,89 @@ export default function RequestForm({ artisanId, companyName }: Props) {
     setSending(false);
   }
 
-  if (success) return <div className="card"><h2>Demande envoyée</h2><p>{companyName} a bien reçu vos informations et pourra vous recontacter.</p></div>;
+  if (success) {
+    return (
+      <div className="alert-success" role="status">
+        <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: 20 }}>Votre demande est envoyée</h2>
+        <p style={{ margin: 0 }}>{companyName} a reçu les informations utiles pour comprendre votre besoin avant de vous recontacter.</p>
+      </div>
+    );
+  }
 
-  return <form onSubmit={submit} style={{ display: "grid", gap: 16 }}>
-    <label>Nom<input name="customerName" required minLength={2} style={fieldStyle} /></label>
-    <label>Téléphone<input name="customerPhone" type="tel" required minLength={6} style={fieldStyle} /></label>
-    <label>Email (facultatif)<input name="customerEmail" type="email" style={fieldStyle} /></label>
-    <label>Commune<input name="city" required style={fieldStyle} /></label>
-    <label>Type de besoin<select name="category" required style={fieldStyle} defaultValue=""><option value="" disabled>Sélectionner</option><option value="Fuite">Fuite</option><option value="Chauffage">Chauffage</option><option value="Installation">Installation</option><option value="Autre">Autre</option></select></label>
-    <label>Urgence<select name="urgency" required style={fieldStyle} defaultValue="normal"><option value="low">Peut attendre</option><option value="normal">Normal</option><option value="urgent">Urgent</option></select></label>
-    <label>Description<textarea name="description" required minLength={5} rows={5} style={fieldStyle} /></label>
-    <label>Disponibilités<input name="availability" style={fieldStyle} placeholder="Ex. mardi après 17h" /></label>
-    <label>Photos (3 maximum)<input name="photos" type="file" multiple accept="image/jpeg,image/png,image/webp" style={fieldStyle} /></label>
-    {error && <p style={{ color: "#b42318", margin: 0 }}>{error}</p>}
-    <button className="button" type="submit" disabled={sending}>{sending ? "Envoi…" : "Envoyer la demande"}</button>
-  </form>;
+  return (
+    <form onSubmit={submit} className="form-grid">
+      <section className="form-section" aria-labelledby="besoin-title">
+        <h2 id="besoin-title" className="form-section-title">Votre besoin</h2>
+
+        <label className="field-label">
+          Quel est le problème ?
+          <select name="category" required className="field" defaultValue="">
+            <option value="" disabled>Choisir un type de besoin</option>
+            <option value="Fuite">Fuite ou recherche de fuite</option>
+            <option value="Chauffage">Chauffage</option>
+            <option value="Installation">Installation ou remplacement</option>
+            <option value="Autre">Autre besoin</option>
+          </select>
+        </label>
+
+        <label className="field-label">
+          Où se situe l’intervention ?
+          <input name="city" required className="field" autoComplete="address-level2" placeholder="Ex. Brest" />
+        </label>
+
+        <label className="field-label">
+          Est-ce urgent ?
+          <select name="urgency" required className="field" defaultValue="normal">
+            <option value="low">Non, cela peut attendre</option>
+            <option value="normal">À traiter prochainement</option>
+            <option value="urgent">Oui, c’est urgent</option>
+          </select>
+        </label>
+
+        <label className="field-label">
+          Décrivez ce qui se passe
+          <span className="field-help">Quelques phrases suffisent : ce que vous constatez, depuis quand, et ce qui a déjà été essayé.</span>
+          <textarea name="description" required minLength={5} rows={5} className="field" placeholder="Ex. Fuite sous l’évier depuis ce matin, l’eau coule dès que j’ouvre le robinet." />
+        </label>
+
+        <label className="field-label">
+          Quand êtes-vous disponible ?
+          <input name="availability" className="field" placeholder="Ex. aujourd’hui après 17 h ou mardi matin" />
+        </label>
+
+        <label className="field-label">
+          Ajouter des photos
+          <span className="field-help">Facultatif · jusqu’à 3 photos · 5 Mo maximum par photo.</span>
+          <input name="photos" type="file" multiple accept="image/jpeg,image/png,image/webp" className="field" />
+        </label>
+      </section>
+
+      <section className="form-section" aria-labelledby="contact-title">
+        <h2 id="contact-title" className="form-section-title">Vos coordonnées</h2>
+
+        <label className="field-label">
+          Nom
+          <input name="customerName" required minLength={2} className="field" autoComplete="name" />
+        </label>
+
+        <label className="field-label">
+          Téléphone
+          <span className="field-help">Pour que l’artisan puisse vous rappeler.</span>
+          <input name="customerPhone" type="tel" required minLength={6} className="field" autoComplete="tel" inputMode="tel" />
+        </label>
+
+        <label className="field-label">
+          Email <span className="field-help">(facultatif)</span>
+          <input name="customerEmail" type="email" className="field" autoComplete="email" inputMode="email" />
+        </label>
+      </section>
+
+      {error && <p className="alert-error" role="alert">{error}</p>}
+
+      <button className="button" type="submit" disabled={sending} aria-busy={sending}>
+        {sending ? "Envoi de la demande…" : "Envoyer ma demande"}
+      </button>
+      <p className="muted" style={{ margin: "-6px 0 0", fontSize: 12, textAlign: "center" }}>Vos informations sont transmises à {companyName} pour traiter votre demande.</p>
+    </form>
+  );
 }
-
-const fieldStyle = { display: "block", width: "100%", marginTop: 8, padding: 12, border: "1px solid #d0d5dd", borderRadius: 10, background: "white" } as const;
