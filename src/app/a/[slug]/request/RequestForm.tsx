@@ -9,11 +9,13 @@ export default function RequestForm({ artisanId, companyName }: Props) {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [photoWarning, setPhotoWarning] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSending(true);
     setError("");
+    setPhotoWarning("");
     const form = new FormData(event.currentTarget);
     const files = form.getAll("photos").filter((value): value is File => value instanceof File && value.size > 0);
 
@@ -49,12 +51,30 @@ export default function RequestForm({ artisanId, companyName }: Props) {
       return;
     }
 
+    let failedPhotos = 0;
     for (const [index, file] of files.entries()) {
       const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${artisanId}/${requestId}/${index + 1}-${crypto.randomUUID()}.${extension}`;
+      const path = `requests/${artisanId}/${requestId}/${index + 1}-${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await supabase.storage.from("drop-service-request-photos").upload(path, file, { contentType: file.type });
-      if (uploadError) continue;
-      await supabase.from("drop_service_request_photos").insert({ request_id: requestId, storage_path: path, file_name: file.name, mime_type: file.type, size_bytes: file.size });
+      if (uploadError) {
+        failedPhotos += 1;
+        continue;
+      }
+
+      const { error: photoRecordError } = await supabase.from("drop_service_request_photos").insert({
+        request_id: requestId,
+        storage_path: path,
+        file_name: file.name,
+        mime_type: file.type,
+        size_bytes: file.size,
+      });
+      if (photoRecordError) failedPhotos += 1;
+    }
+
+    if (failedPhotos > 0) {
+      setPhotoWarning(
+        `Votre demande a bien été enregistrée, mais ${failedPhotos} photo${failedPhotos > 1 ? "s n’ont" : " n’a"} pas pu être jointe${failedPhotos > 1 ? "s" : ""}. Ne renvoyez pas toute la demande : vous pourrez transmettre ${failedPhotos > 1 ? "ces photos" : "la photo"} à l’artisan lors de son rappel.`
+      );
     }
 
     setSuccess(true);
@@ -63,9 +83,17 @@ export default function RequestForm({ artisanId, companyName }: Props) {
 
   if (success) {
     return (
-      <div className="alert-success" role="status">
-        <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: 20 }}>Votre demande est envoyée</h2>
-        <p style={{ margin: 0 }}>{companyName} a reçu les informations utiles pour comprendre votre besoin avant de vous recontacter.</p>
+      <div className="form-grid">
+        <div className="alert-success" role="status">
+          <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: 20 }}>Votre demande est envoyée</h2>
+          <p style={{ margin: 0 }}>{companyName} a reçu les informations utiles pour comprendre votre besoin avant de vous recontacter.</p>
+        </div>
+        {photoWarning && (
+          <div className="card" role="status">
+            <strong>Photos partiellement envoyées</strong>
+            <p className="muted" style={{ marginBottom: 0 }}>{photoWarning}</p>
+          </div>
+        )}
       </div>
     );
   }
