@@ -104,6 +104,13 @@ La V1 est considérée comme montrable lorsque :
 - CRM tiers ;
 - nombreuses personnalisations par client.
 
-## Hypothèse commerciale à tester
+## Offre pilote actuelle
 
-Pilote : environ 199–299 € de mise en place, avec une hypothèse d’abonnement de 29–49 €/mois après validation. Ces montants sont des hypothèses de test, pas des prix définitifs.
+- 3 artisans pilotes maximum ;
+- 14 jours gratuits ;
+- installation comprise ;
+- sans carte bancaire et sans engagement ;
+- offre Fondateur après le pilote : 99 €/mois si l'artisan souhaite continuer ;
+- pas de frais d'installation pour les premiers pilotes.
+
+Cette offre reste une hypothèse commerciale à valider sur le terrain. Les métriques du pilote et les retours réels des artisans restent l'autorité pour toute évolution de prix ou de périmètre.
