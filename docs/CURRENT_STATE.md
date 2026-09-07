@@ -28,6 +28,8 @@ La base PostgreSQL/Supabase avec RLS reste l'autorité pour l'isolation multi-te
 
 ## 3. État réel Supabase observé
 
+DROP-Service utilise actuellement le projet Supabase historiquement associé à IN-SECT, référence `nczdadkyysrxxcsnsrrn`. Les tables DROP-Service y sont séparées par le préfixe `drop_service_*`.
+
 Tables métier présentes :
 
 - `drop_service_artisans`
@@ -42,7 +44,15 @@ Les contraintes de `drop_service_requests` autorisent uniquement les statuts `ne
 
 La lecture publique de `drop_service_artisans` est limitée par des grants de colonnes aux informations nécessaires à la page publique. Les demandes et photos ne sont pas publiquement lisibles.
 
-Au moment de cet audit, la base réelle contient 0 utilisateur Auth, 0 artisan, 0 demande et 0 photo. Les tests multi-tenant réels ne peuvent donc pas encore être exécutés avec deux artisans distincts.
+Au moment de cet audit, les données DROP-Service de ce projet contiennent 0 artisan, 0 demande et 0 photo. Les tests multi-tenant réels ne peuvent donc pas encore être exécutés avec deux artisans distincts.
+
+### Projet « La forêt enchantée » — ne pas utiliser pour DROP-Service
+
+Le projet Supabase `jwyayfkssyagvnablttg`, nommé « La forêt enchantée », a été vérifié le 2026-09-07 avant toute migration. Il n'est pas vide : il contient notamment des tables et fonctions actives liées à Célébrations, ainsi qu'une fonction Wikignose, et au moins un utilisateur Auth.
+
+Décision : ne pas déplacer DROP-Service dans ce projet. Ne rien supprimer ni réaffecter dans « La forêt enchantée » pour faire de la place à DROP-Service.
+
+À court terme, conserver DROP-Service dans le projet actuel avec ses tables préfixées est moins risqué qu'une migration vers un projet déjà utilisé. Un projet Supabase réellement dédié à DROP-Service pourra être créé plus tard si le coût et le besoin opérationnel le justifient.
 
 ## 4. Sécurité de l'administration
 
@@ -107,7 +117,7 @@ Séparer les vues et permissions, pas les données sans raison. Réutiliser la m
 
 ## 7. Écarts documentaires connus
 
-`PRODUCT.md` contient encore une ancienne hypothèse de prix (mise en place 199–299 € puis 29–49 €/mois). Le playbook commercial actuel utilise l'offre pilote 14 jours gratuits puis 99 €/mois pour les premiers clients. Ne pas utiliser l'ancienne hypothèse dans une conversation commerciale.
+L'ancienne hypothèse tarifaire 199–299 € de mise en place puis 29–49 €/mois a été retirée de la référence produit. L'offre commerciale actuelle de référence reste : pilote 14 jours gratuit, puis 99 €/mois si l'artisan souhaite conserver le service.
 
 ## 8. Priorités avant sophistication
 
