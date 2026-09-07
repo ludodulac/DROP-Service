@@ -130,3 +130,28 @@ Le futur tableau de bord devrait mettre en avant la valeur générée, pas seule
 - Faire nous-mêmes l'installation au début pour apprendre le métier.
 - Noter les objections et demandes réelles des pilotes avant de développer de nouvelles fonctionnalités.
 - Priorité absolue : obtenir un premier client payant et apprendre de son utilisation réelle.
+
+## 10. Workflow de l'administration privée
+
+Adresse de travail : `/admin`.
+
+Principe : l'administration doit être le poste de commande quotidien de Ludovic. Les recherches, textes et prochaines actions doivent y être préparés avant de lui demander d'intervenir.
+
+Workflow de prospection :
+
+1. **À valider** — le prospect et le message ont été préparés, mais rien ne part.
+2. **Validé** — Ludovic a vérifié le prospect et donné son feu vert au message.
+3. **Ouvrir dans Gmail** — pour un prospect avec email, l'administration ouvre une composition Gmail préremplie avec destinataire, objet et corps du message. L'envoi reste manuel et contrôlé.
+4. **Marquer comme envoyé** — une fois le premier contact réellement envoyé, le prospect passe à `Contacté`.
+5. **Relance automatique dans l'administration** — une tâche de relance à J+3 est créée si aucune réponse n'est enregistrée.
+6. **A répondu → Démo → Pilote → Client** — le statut doit toujours refléter la prochaine décision commerciale utile.
+
+Pour les prospects sans email public fiable, ne pas inventer une adresse : préparer le message, puis utiliser le formulaire officiel du site ou le téléphone.
+
+Prospects pilotes actuellement préchargés dans l'administration :
+
+- Emmanuel Lambal — priorité haute, email public disponible, démo personnalisée prête.
+- Entreprise KERMAS / Raphaël Masson — priorité haute, contact via formulaire ou téléphone car aucun email public fiable n'a été retenu.
+- EDPC / Etienne Drévillon — priorité normale, adresse email issue d'un annuaire partenaire à vérifier avant envoi.
+
+Règle de sécurité commerciale : l'administration peut préparer, copier et préremplir un message, mais elle ne doit pas envoyer un email de prospection sans action explicite de Ludovic.
