@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./request-detail.css";
 
 export const metadata: Metadata = {
-  title: "Assistant Demandes & Devis",
-  description: "Centralisez et suivez les demandes clients de votre entreprise artisanale.",
+  title: "Demandes clients pour artisans — Ludovic Dulac",
+  description: "Recevez des demandes clients plus claires, priorisez les urgences et suivez chaque dossier jusqu'au devis et au chantier gagné.",
 };
 
 export default function RootLayout({
