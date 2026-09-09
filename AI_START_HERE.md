@@ -1,33 +1,31 @@
 # AI START HERE — DROP-Service
 
-Ce fichier est un routeur. Vérifier le `main` réel, puis lire uniquement ce qui sert à la tâche.
+## Contexte transversal
 
-## Hiérarchie de vérité
+DROP-Service appartient à l'écosystème **`ludodulac/Grand-p-re-`**. Le slug GitHub de Grand Père utilise des tirets à la place des caractères accentués. En nouvelle conversation : lire Grand Père `AI_START_HERE.md`, la fiche DROP-Service via `projects/_INDEX.md` et `LOOP_ENGINEERING.md`, puis revenir ici. **Ce dépôt reste la source de vérité du produit, de Supabase/RLS, du code et des tests.**
 
-1. code, schéma Supabase/RLS, tests et comportement réellement déployé ;
-2. `docs/OPERATING_PRINCIPLES.md` et `docs/PRODUCT.md` pour les règles produit durables ;
-3. `docs/ARCHITECTURE.md` pour les contrats techniques ;
-4. `docs/CURRENT_STATE.md` pour l'état de travail, à revérifier contre le dépôt ;
-5. `docs/ROADMAP.md` et historiques comme intentions, jamais comme état implémenté.
+Ce fichier est un routeur. Vérifier `main`, puis `docs/_INDEX.md` et uniquement ce qui sert à la tâche.
+
+## Hiérarchie
+
+code + schéma/RLS + tests + déployé → principes/produit → architecture → état courant à revérifier → roadmap/historique.
 
 ## Constitution minimale
 
-DROP-Service est un micro-SaaS simple pour artisans : demande entrante → Nouveau → Contacté → Devis → Gagné/Perdu. La V1 doit rester démontrable et exploitable sans CRM lourd, IA obligatoire, WhatsApp ou SMS payant. L'isolation multi-client est constitutive : les données métier doivent rester rattachées à l'artisan et protégées par les politiques d'accès appropriées.
+Micro-SaaS simple pour artisans : demande → Nouveau → Contacté → Devis → Gagné/Perdu. V1 démontrable et exploitable sans CRM lourd, IA obligatoire, WhatsApp ou SMS payant. Isolation multi-client constitutive.
 
 ## Routage
 
-- Besoin/fonction produit → `docs/PRODUCT.md` puis code concerné.
-- Règles de fonctionnement et limites V1 → `docs/OPERATING_PRINCIPLES.md`.
-- Supabase, isolation, flux techniques → `docs/ARCHITECTURE.md`, migrations/policies réelles puis code.
-- État actuel / reprise de travail → `docs/CURRENT_STATE.md`, puis vérification par code/tests/CI.
-- UI/identité → `docs/DESIGN_SYSTEM.md` puis composants réels.
-- Commercialisation → `docs/PLAYBOOK_COMMERCIAL.md`.
-- Futur → `docs/ROADMAP.md`, sans transformer une idée en exigence actuelle.
+- produit → `docs/PRODUCT.md` ;
+- limites V1 → `docs/OPERATING_PRINCIPLES.md` ;
+- Supabase/isolation → `docs/ARCHITECTURE.md` + schéma/policies réels ;
+- état → `docs/CURRENT_STATE.md` puis vérification code/tests/CI ;
+- UI → `docs/DESIGN_SYSTEM.md` ;
+- commercial → `docs/PLAYBOOK_COMMERCIAL.md` ;
+- futur → `docs/ROADMAP.md` comme hypothèse.
 
-## Garde-fous
+## Boucle
 
-- Ne jamais utiliser le sous-dossier `drop-service` éventuellement présent dans un autre dépôt comme source de vérité de DROP-Service.
-- Ne pas ajouter de complexité spéculative à la V1.
-- Pour une modification multi-tenant, vérifier réellement schéma, `artisan_id`, RLS et parcours concerné.
-- Préserver les capacités existantes avant suppression ou migration.
-- Ne pas charger tout `docs/` par défaut.
+`besoin artisan → état réel → friction la plus importante → première couche responsable → changement minimal → preuve parcours/donnée → CONTINUE/PIVOT/STOP`.
+
+Ne pas ajouter de complexité spéculative. Pour une modification multi-tenant, vérifier réellement `artisan_id`, RLS et parcours. Ne jamais utiliser le `drop-service/` d'un autre dépôt comme source de vérité.
