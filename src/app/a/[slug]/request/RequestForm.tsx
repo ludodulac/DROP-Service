@@ -64,9 +64,6 @@ export default function RequestForm({ artisanId, companyName }: Props) {
       const { error: photoRecordError } = await supabase.from("drop_service_request_photos").insert({
         request_id: requestId,
         storage_path: path,
-        file_name: file.name,
-        mime_type: file.type,
-        size_bytes: file.size,
       });
       if (photoRecordError) failedPhotos += 1;
     }
