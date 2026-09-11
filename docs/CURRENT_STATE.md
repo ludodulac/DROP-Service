@@ -1,6 +1,6 @@
 # État actuel audité — DROP-Service
 
-Date de référence : 2026-09-07
+Date de référence : 2026-09-11
 Branche de référence : `main`
 
 Ce document sert de passation courte avant toute évolution transversale. Il complète `PRODUCT.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `DESIGN_SYSTEM.md` et `PLAYBOOK_COMMERCIAL.md` sans les remplacer.
@@ -9,7 +9,6 @@ Ce document sert de passation courte avant toute évolution transversale. Il com
 
 - Dépôt de production : `ludodulac/DROP-Service`.
 - Branche présente : `main` uniquement.
-- Aucun Pull Request récent : les derniers changements ont été poussés directement sur `main`.
 - Les routes `src/app/demo/**` sont des démonstrations commerciales et ne doivent pas être confondues avec le parcours réel `/a/[slug]/**`.
 - L'administration `/admin` est un outil interne commercial ; elle n'est pas l'espace artisan.
 - Ne pas supprimer les démonstrations, fichiers SQL historiques ou styles séparés uniquement pour « nettoyer » le dépôt.
@@ -44,7 +43,7 @@ Les contraintes de `drop_service_requests` autorisent uniquement les statuts `ne
 
 La lecture publique de `drop_service_artisans` est limitée par des grants de colonnes aux informations nécessaires à la page publique. Les demandes et photos ne sont pas publiquement lisibles.
 
-Au moment de cet audit, les données DROP-Service de ce projet contiennent 0 artisan, 0 demande et 0 photo. Les tests multi-tenant réels ne peuvent donc pas encore être exécutés avec deux artisans distincts.
+Lors de l'audit initial du 2026-09-07, les données DROP-Service de ce projet contenaient 0 artisan, 0 demande et 0 photo. Cet état de données est transitoire et doit être revérifié avant tout nouveau jugement de supervision.
 
 ### Projet « La forêt enchantée » — ne pas utiliser pour DROP-Service
 
@@ -54,7 +53,43 @@ Décision : ne pas déplacer DROP-Service dans ce projet. Ne rien supprimer ni r
 
 À court terme, conserver DROP-Service dans le projet actuel avec ses tables préfixées est moins risqué qu'une migration vers un projet déjà utilisé. Un projet Supabase réellement dédié à DROP-Service pourra être créé plus tard si le coût et le besoin opérationnel le justifient.
 
-## 4. Sécurité de l'administration
+## 4. Auth e-mail / Resend — état du 2026-09-11
+
+BRIF est utilisé comme **nom commercial de travail pour le pilote**, sans être considéré à ce stade comme une marque juridique définitivement validée. Ne pas renommer les tables Supabase ou entreprendre une migration technique uniquement pour ce changement de nom.
+
+Le sous-domaine d'envoi configuré côté Resend est `mail.ludovicdulac.com`. Les enregistrements DNS Resend ajoutés chez OVH concernent l'envoi d'e-mails et ne doivent pas entraîner de modification des autres entrées DNS existantes :
+
+- DKIM TXT sur `resend._domainkey.mail` ;
+- CNAME `rsend.mail` vers l'infrastructure Resend ;
+- CNAME `send.mail` vers l'infrastructure Resend.
+
+Le SMTP personnalisé Supabase/Resend a déjà été renseigné dans le Dashboard Supabase. **Ne pas demander de le reconfigurer ou d'écraser ses valeurs sans avoir d'abord constaté un échec réel ou vérifié qu'une valeur est incorrecte.** Les secrets SMTP / clés API ne doivent jamais être consignés dans ce dépôt ni demandés dans une conversation.
+
+Les templates Supabase Auth utiles ont été francisés avec une identité BRIF sobre, en conservant exactement les variables techniques Supabase nécessaires :
+
+- confirmation d'inscription ;
+- réinitialisation du mot de passe ;
+- Magic Link ;
+- invitation utilisateur ;
+- changement d'adresse e-mail ;
+- code de vérification / OTP.
+
+Objets retenus :
+
+- `Confirmez votre adresse e-mail – BRIF`
+- `Réinitialisez votre mot de passe – BRIF`
+- `Votre lien de connexion BRIF`
+- `Votre espace BRIF est prêt`
+- `Confirmez votre nouvelle adresse e-mail – BRIF`
+- `Votre code de vérification BRIF`
+
+Les liens des templates concernés continuent d'utiliser `{{ .ConfirmationURL }}` et le template OTP conserve `{{ .Token }}`. Ne pas remplacer ces variables sans vérifier le flux Auth réellement utilisé par l'application.
+
+### Prochaine preuve attendue pour l'e-mail Auth
+
+Ne plus modifier la configuration SMTP ni les templates par défaut. La prochaine étape est un **test réel d'un flux Auth BRIF** : déclencher un e-mail depuis le parcours réellement utilisé, vérifier sa réception, son expéditeur, son contenu, puis vérifier que le lien/code mène au bon résultat dans l'application. Si le test échoue, diagnostiquer d'abord la première couche responsable (Resend/DNS, SMTP Supabase, URL de redirection, ou code Auth) avant toute modification.
+
+## 5. Sécurité de l'administration
 
 Constat initial : les tables du back-office étaient correctement isolées par `owner_id`, mais tout utilisateur authentifié pouvait techniquement disposer de son propre espace admin.
 
@@ -67,7 +102,7 @@ Migration documentée dans `supabase/restrict_admin_to_ludovic.sql`.
 
 Cette restriction par email est une solution de démarrage. Quand le compte réel existe, une future évolution vers un rôle d'administration dans `app_metadata` pourra être évaluée, sans utiliser `user_metadata` pour l'autorisation.
 
-## 5. Tests réellement présents
+## 6. Tests réellement présents
 
 Le dépôt possède actuellement un contrôle CI de build Next.js sur `main` via `.github/workflows/build.yml`.
 
@@ -85,7 +120,7 @@ Avant le premier pilote réel, il faut valider sur l'environnement déployé :
 6. changement de statut ;
 7. impossibilité pour un deuxième artisan de lire ou modifier la demande du premier.
 
-## 6. Évaluation des pistes transversales
+## 7. Évaluation des pistes transversales
 
 ### Machine d'état
 
@@ -115,16 +150,17 @@ Le parcours actuel crée d'abord la demande, puis charge les photos. Un échec d
 
 Séparer les vues et permissions, pas les données sans raison. Réutiliser la même source métier quand les besoins sont les mêmes.
 
-## 7. Écarts documentaires connus
+## 8. Écarts documentaires connus
 
 L'ancienne hypothèse tarifaire 199–299 € de mise en place puis 29–49 €/mois a été retirée de la référence produit. L'offre commerciale actuelle de référence reste : pilote 14 jours gratuit, puis 99 €/mois si l'artisan souhaite conserver le service.
 
-## 8. Priorités avant sophistication
+## 9. Priorités avant sophistication
 
-1. Créer le premier compte réel de Ludovic et vérifier l'accès `/admin`.
-2. Créer au moins un artisan réel de test et exécuter le parcours public → dashboard → détail → statut.
-3. Créer un deuxième compte artisan de test et vérifier l'isolation RLS croisée.
-4. Corriger uniquement les échecs observés.
-5. Lancer le premier pilote terrain et conserver les métriques commerciales comme autorité de décision produit.
+1. Vérifier le premier e-mail Auth BRIF réel sans reconfigurer ce qui est déjà enregistré.
+2. Créer le premier compte réel de Ludovic et vérifier l'accès `/admin`.
+3. Créer au moins un artisan réel de test et exécuter le parcours public → dashboard → détail → statut.
+4. Créer un deuxième compte artisan de test et vérifier l'isolation RLS croisée.
+5. Corriger uniquement les échecs observés.
+6. Lancer le premier pilote terrain et conserver les métriques commerciales comme autorité de décision produit.
 
 Toute idée supplémentaire doit répondre à la question : « Est-ce que cela rapproche d'une boucle réelle prospect → demande exploitable → action artisan → résultat ? »
