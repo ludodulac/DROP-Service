@@ -19,7 +19,7 @@ type RequestDetail = {
   created_at: string;
 };
 
-type Photo = { id: string; file_name: string; storage_path: string; url?: string };
+type Photo = { id: string; storage_path: string; url?: string };
 
 const statusLabels = { new: "Nouveau", contacted: "Contacté", quote_sent: "Devis envoyé", won: "Chantier gagné", lost: "Demande perdue" } as const;
 const urgencyLabels = { low: "Peut attendre", normal: "Normal", urgent: "Urgent" } as const;
@@ -53,7 +53,7 @@ export default function RequestDetailPage() {
 
     setRequest(data as RequestDetail);
 
-    const { data: photoData } = await supabase.from("drop_service_request_photos").select("id, file_name, storage_path").eq("request_id", params.id);
+    const { data: photoData } = await supabase.from("drop_service_request_photos").select("id, storage_path").eq("request_id", params.id);
     const signedPhotos = await Promise.all(((photoData ?? []) as Photo[]).map(async (photo) => {
       const { data: signed } = await supabase.storage.from("drop-service-request-photos").createSignedUrl(photo.storage_path, 60 * 15);
       return { ...photo, url: signed?.signedUrl };
@@ -132,7 +132,7 @@ export default function RequestDetailPage() {
         <section className="data-panel">
           <div className="section-heading"><div><h2>Photos reçues</h2><p className="muted">Ouvrez une photo pour l'afficher en grand.</p></div><span className="count-label">{photos.length} photo{photos.length > 1 ? "s" : ""}</span></div>
           {photos.length === 0 ? <div className="photo-empty">Aucune photo jointe à cette demande.</div> : (
-            <div className="photo-grid">{photos.map((photo) => photo.url ? <a key={photo.id} href={photo.url} target="_blank" rel="noreferrer"><img src={photo.url} alt={photo.file_name || "Photo de la demande"} /></a> : null)}</div>
+            <div className="photo-grid">{photos.map((photo) => photo.url ? <a key={photo.id} href={photo.url} target="_blank" rel="noreferrer"><img src={photo.url} alt="Photo de la demande" /></a> : null)}</div>
           )}
         </section>
       </div>
