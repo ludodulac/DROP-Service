@@ -14,11 +14,11 @@ export default function EmmanuelLambalRequestDemoPage() {
   return (
     <main style={{ padding: "48px 0" }}>
       <section className="card" style={{ maxWidth: 720, margin: "0 auto 24px" }}>
-        <p className="muted" style={{ marginTop: 0 }}>Démonstration • aucune donnée n’est envoyée</p>
-        <h1>Transmettre votre demande à un plombier-chauffagiste</h1>
-        <p className="muted">Exemple préparé pour Emmanuel Lambal • Brest</p>
+        <p className="muted" style={{ marginTop: 0 }}>Exemple de parcours client • aucune donnée n’est envoyée</p>
+        <h1>Transmettre votre demande à Emmanuel Lambal</h1>
+        <p className="muted">Plombier-chauffagiste • Brest et Finistère selon la demande</p>
         <p style={{ lineHeight: 1.6 }}>
-          Donnez les informations utiles en quelques instants pour que l’artisan puisse comprendre la situation avant de vous rappeler.
+          Décrivez votre besoin et ajoutez, si utile, quelques photos. Ces informations permettent à l’artisan de comprendre la situation avant de vous rappeler.
         </p>
 
         <form style={{ display: "grid", gap: 16 }}>
@@ -27,10 +27,10 @@ export default function EmmanuelLambalRequestDemoPage() {
               <option value="" disabled>Sélectionner</option>
               <option>Fuite / dégât des eaux</option>
               <option>WC / sanitaire</option>
-              <option>Robinetterie</option>
+              <option>Robinetterie / évier / lavabo</option>
               <option>Chauffe-eau / ballon d’eau chaude</option>
               <option>Chauffage</option>
-              <option>Salle de bains / cuisine / installation</option>
+              <option>Salle de bains / installation</option>
               <option>Autre</option>
             </select>
           </label>
@@ -41,6 +41,9 @@ export default function EmmanuelLambalRequestDemoPage() {
               <option value="urgent">Urgent</option>
               <option value="low">Peut attendre</option>
             </select>
+            <span className="muted" style={{ display: "block", marginTop: 8, fontSize: 13 }}>
+              Le niveau d’urgence aide l’artisan à comprendre votre situation mais ne garantit pas sa disponibilité ni un délai d’intervention.
+            </span>
           </label>
           <label>Que se passe-t-il ?<textarea rows={5} style={fieldStyle} placeholder="Ex. fuite sous l’évier depuis ce matin…" /></label>
           <label>Quand êtes-vous disponible ?<input style={fieldStyle} placeholder="Ex. aujourd’hui après 17h" /></label>
@@ -48,17 +51,17 @@ export default function EmmanuelLambalRequestDemoPage() {
           <label>Votre nom<input style={fieldStyle} /></label>
           <label>Téléphone<input type="tel" style={fieldStyle} /></label>
           <label>Email (facultatif)<input type="email" style={fieldStyle} /></label>
-          <a className="button" href="#apercu">Voir ce que reçoit l’artisan</a>
+          <a className="button" href="#apercu">Voir l’exemple de demande reçue</a>
         </form>
 
         <p className="muted" style={{ marginTop: 20, fontSize: 14 }}>
-          Maquette indépendante préparée à titre de démonstration. Elle n’est pas encore validée par Emmanuel Lambal et ne collecte aucune donnée.
+          Cette page est une démonstration préparée pour Emmanuel Lambal. Elle ne collecte ni ne transmet les informations saisies.
         </p>
-        <Link href="/demo/emmanuel-lambal">← Retour à la fiche</Link>
+        <Link href="/demo/emmanuel-lambal">← Retour à la présentation</Link>
       </section>
 
       <section id="apercu" className="card" style={{ maxWidth: 720, margin: "0 auto" }}>
-        <p className="muted" style={{ marginTop: 0 }}>Aperçu côté artisan • exemple</p>
+        <p className="muted" style={{ marginTop: 0 }}>Exemple de ce que l’artisan reçoit</p>
         <h2>Nouvelle demande — fuite urgente à Brest</h2>
         <div style={{ display: "grid", gap: 12 }}>
           <p><strong>Besoin :</strong> Fuite / dégât des eaux</p>
@@ -70,7 +73,7 @@ export default function EmmanuelLambalRequestDemoPage() {
           <p><strong>Contact :</strong> Marie D. • 06 XX XX XX XX</p>
         </div>
         <p style={{ lineHeight: 1.6, marginBottom: 0 }}>
-          En un coup d’œil, l’artisan sait ce qui se passe, où intervenir, le niveau d’urgence et quand le client est disponible.
+          Avant de rappeler, l’artisan connaît déjà le besoin, la commune, l’urgence déclarée, les disponibilités et dispose éventuellement de photos.
         </p>
       </section>
     </main>
