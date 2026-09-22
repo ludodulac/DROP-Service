@@ -12,9 +12,9 @@ const fieldStyle = {
 
 export default function EmmanuelLambalRequestDemoPage() {
   return (
-    <main style={{ padding: "48px 0" }}>
+    <main id="haut" style={{ padding: "48px 0" }}>
       <section className="card" style={{ maxWidth: 720, margin: "0 auto 24px" }}>
-        <p className="muted" style={{ marginTop: 0 }}>Exemple de parcours client • aucune donnée n’est envoyée</p>
+        <p className="demo-label">Page de démonstration</p>
         <h1>Transmettre votre demande à Emmanuel Lambal</h1>
         <p className="muted">Plombier-chauffagiste • Brest et Finistère selon la demande</p>
         <p style={{ lineHeight: 1.6 }}>
@@ -47,11 +47,11 @@ export default function EmmanuelLambalRequestDemoPage() {
           </label>
           <label>Que se passe-t-il ?<textarea rows={5} style={fieldStyle} placeholder="Ex. fuite sous l’évier depuis ce matin…" /></label>
           <label>Quand êtes-vous disponible ?<input style={fieldStyle} placeholder="Ex. aujourd’hui après 17h" /></label>
-          <label>Photos utiles (3 maximum)<input type="file" multiple accept="image/jpeg,image/png,image/webp" style={fieldStyle} /></label>
+          <label>Photos utiles (3 maximum)<input type="file" multiple accept="image/jpeg,image/png,image/webp" style={fieldStyle} /></label>\n          <div className="demo-photo-grid" aria-label="Exemples de photos jointes">\n            <div className="demo-photo"><span>PHOTO EXEMPLE</span><strong>Fuite sous évier</strong></div>\n            <div className="demo-photo"><span>PHOTO EXEMPLE</span><strong>Raccord humide</strong></div>\n          </div>
           <label>Votre nom<input style={fieldStyle} /></label>
           <label>Téléphone<input type="tel" style={fieldStyle} /></label>
           <label>Email (facultatif)<input type="email" style={fieldStyle} /></label>
-          <a className="button" href="#apercu">Voir l’exemple de demande reçue</a>
+          <a className="button" href="#apercu">Voir l’exemple de demande reçue ↓</a>\n          <p className="scroll-hint">La suite se trouve plus bas sur cette même page.</p>
         </form>
 
         <p className="muted" style={{ marginTop: 20, fontSize: 14 }}>
@@ -69,7 +69,7 @@ export default function EmmanuelLambalRequestDemoPage() {
           <p><strong>Urgence :</strong> Urgent</p>
           <p><strong>Description :</strong> Fuite sous l’évier de la cuisine depuis ce matin. L’eau coule dès que le robinet est utilisé.</p>
           <p><strong>Disponibilité :</strong> Aujourd’hui après 17h</p>
-          <p><strong>Photos :</strong> 2 photos jointes</p>
+          <p><strong>Photos :</strong> 2 photos jointes</p>\n          <div className="demo-photo-grid" aria-label="Photos exemple reçues par l’artisan">\n            <div className="demo-photo"><span>PHOTO EXEMPLE</span><strong>Fuite sous évier</strong></div>\n            <div className="demo-photo"><span>PHOTO EXEMPLE</span><strong>Raccord humide</strong></div>\n          </div>
           <p><strong>Contact :</strong> Marie D. • 06 XX XX XX XX</p>
         </div>
         <p style={{ lineHeight: 1.6, marginBottom: 0 }}>
