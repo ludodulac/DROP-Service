@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./request-detail.css";
+import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "Demandes clients pour artisans — Ludovic Dulac",
+  title: "BRIF — Demandes clients pour artisans",
   description: "Recevez des demandes clients plus claires, priorisez les urgences et suivez chaque dossier jusqu'au devis et au chantier gagné.",
 };
 
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body>{children}</body>
+      <body>
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }
