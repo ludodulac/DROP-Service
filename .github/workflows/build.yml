@@ -17,8 +17,8 @@ jobs:
         with:
           node-version: "22"
       - name: Install dependencies
-        run: npm install
-      - name: Capture resolved lockfile
-        run: cat package-lock.json
+        run: npm ci
+      - name: Security audit
+        run: npm audit --audit-level=high
       - name: Build
         run: npm run build
