@@ -18,5 +18,7 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm install
+      - name: Capture resolved lockfile
+        run: cat package-lock.json
       - name: Build
         run: npm run build
