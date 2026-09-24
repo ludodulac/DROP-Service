@@ -116,7 +116,7 @@ export default function DashboardPage() {
             <h1>Vos demandes</h1>
             <p className="muted">Repérez ce qui demande votre attention et suivez chaque demande jusqu’au chantier gagné.</p>
           </div>
-          {artisan && <Link className="button primary-action" href={`/a/${artisan.slug}`}>Ouvrir ma page client</Link>}
+          {artisan && <Link className="button primary-action" href={`/a/${artisan.slug}?preview=1`}>Prévisualiser ma page publique</Link>}
         </section>
 
         {error && <div className="alert-error" role="alert">{error}</div>}
@@ -154,7 +154,7 @@ export default function DashboardPage() {
               {artisan && <Link className="button" href={`/a/${artisan.slug}`}>Voir la page à partager</Link>}
             </div>
           ) : (
-            <div className="table-wrap">
+            <div className="mobile-request-list">{requests.map((request) => (<article className="mobile-request-card" key={`mobile-${request.id}`}><div className="mobile-request-head"><div><Link className="client-link" href={`/dashboard/requests/${request.id}`}>{request.customer_name}</Link><span className="cell-subtext">{new Date(request.created_at).toLocaleDateString("fr-FR")}</span></div><span className={`badge ${request.urgency === "urgent" ? "badge-danger" : request.urgency === "low" ? "" : "badge-warning"}`}>{urgencyLabels[request.urgency]}</span></div><div className="mobile-request-grid"><div className="mobile-request-field"><span>Besoin</span><span>{request.category}</span></div><div className="mobile-request-field"><span>Commune</span><span>{request.city}</span></div><div className="mobile-request-field"><span>Statut</span><select className="compact-select" aria-label={`Statut de la demande de ${request.customer_name}`} value={request.status} onChange={(event) => void updateStatus(request.id, event.target.value as RequestRow["status"])}>{Object.entries(statusLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></div></div><Link className="row-action" href={`/dashboard/requests/${request.id}`}>Voir la demande →</Link></article>))}</div><div className="table-wrap">
               <table className="data-table">
                 <thead><tr><th>Client</th><th>Besoin</th><th>Commune</th><th>Urgence</th><th>Statut</th><th><span className="sr-only">Action</span></th></tr></thead>
                 <tbody>
