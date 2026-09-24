@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 type CheckoutState =
@@ -22,9 +21,7 @@ const allowedErrors = new Set([
 ]);
 
 export default function StripeTestDiagnosticPage() {
-  const searchParams = useSearchParams();
   const [result, setResult] = useState<CheckoutState>({ status: "idle" });
-  const checkoutReturn = searchParams.get("checkout");
 
   async function startSandboxCheckout() {
     setResult({ status: "running" });
@@ -63,6 +60,11 @@ export default function StripeTestDiagnosticPage() {
       setResult({ status: "error", code: "diagnostic_failed" });
     }
   }
+
+  const checkoutReturn =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("checkout")
+      : null;
 
   return (
     <main style={{ maxWidth: 560, margin: "48px auto", padding: "0 20px", fontFamily: "system-ui" }}>
