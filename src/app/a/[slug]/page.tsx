@@ -27,7 +27,13 @@ export default async function ArtisanPage({ params, searchParams }: { params: Pr
 
   return (
     <main style={{ padding: "48px 0" }}>
-      {isOwnerPreview ? <section className="artisan-preview-shell"><header className="artisan-preview-header"><p className="artisan-preview-mode">Mode aperçu artisan</p><h1>Vous êtes toujours dans votre espace artisan.</h1><p>La zone ci-dessous montre ce que voient vos clients.</p><Link className="preview-return" href="/dashboard">Retour à mon espace artisan</Link></header><div className="client-preview-frame"><p className="client-preview-label">Aperçu client</p><section className="card" style={{ maxWidth: 720, margin: "0 auto" }}>\n        <p className="muted" style={{ marginTop: 0 }}>Demande de devis</p>\n        <h1>{artisan.company_name}</h1>\n        <p className="muted">{artisan.activity}{artisan.service_area ? ` • ${artisan.service_area}` : ""}</p>\n        <p style={{ lineHeight: 1.6 }}>Décrivez votre problème et envoyez les informations utiles. L’entreprise pourra consulter votre demande et vous recontacter.</p>\n        <Link className="button" href={`/a/${artisan.slug}/request?preview=1`}>Faire une demande</Link>\n      </section></div></section> : <section className="card" style={{ maxWidth: 720, margin: "0 auto" }}>
+      {isOwnerPreview ? <section className="artisan-preview-shell"><header className="artisan-preview-header"><p className="artisan-preview-mode">Mode aperçu artisan</p><h1>Vous êtes toujours dans votre espace artisan.</h1><p>La zone ci-dessous montre ce que voient vos clients.</p><Link className="preview-return" href="/dashboard">Retour à mon espace artisan</Link></header><div className="client-preview-frame"><p className="client-preview-label">Aperçu client</p><section className="card" style={{ maxWidth: 720, margin: "0 auto" }}>
+        <p className="muted" style={{ marginTop: 0 }}>Demande de devis</p>
+        <h1>{artisan.company_name}</h1>
+        <p className="muted">{artisan.activity}{artisan.service_area ? ` • ${artisan.service_area}` : ""}</p>
+        <p style={{ lineHeight: 1.6 }}>Décrivez votre problème et envoyez les informations utiles. L’entreprise pourra consulter votre demande et vous recontacter.</p>
+        <Link className="button" href={`/a/${artisan.slug}/request?preview=1`}>Faire une demande</Link>
+      </section></div></section> : <section className="card" style={{ maxWidth: 720, margin: "0 auto" }}>
         <p className="muted" style={{ marginTop: 0 }}>Demande de devis</p>
         <h1>{artisan.company_name}</h1>
         <p className="muted">{artisan.activity}{artisan.service_area ? ` • ${artisan.service_area}` : ""}</p>
