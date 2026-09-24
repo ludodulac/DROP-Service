@@ -1,11 +1,11 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-type DiagnosticResult =
+type CheckoutState =
   | { status: "idle" }
   | { status: "running" }
-  | { status: "success"; ready: true; interval: "month" }
   | { status: "error"; code: string };
 
 const allowedErrors = new Set([
@@ -16,12 +16,17 @@ const allowedErrors = new Set([
   "stripe_test_not_configured",
   "artisan_lookup_failed",
   "invalid_request",
+  "invalid_checkout_origin",
+  "checkout_url_unavailable",
+  "checkout_session_failed",
 ]);
 
 export default function StripeTestDiagnosticPage() {
-  const [result, setResult] = useState<DiagnosticResult>({ status: "idle" });
+  const searchParams = useSearchParams();
+  const [result, setResult] = useState<CheckoutState>({ status: "idle" });
+  const checkoutReturn = searchParams.get("checkout");
 
-  async function runDiagnostic() {
+  async function startSandboxCheckout() {
     setResult({ status: "running" });
 
     try {
@@ -30,19 +35,17 @@ export default function StripeTestDiagnosticPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ interval: "month" }),
       });
-
       const payload: unknown = await response.json();
 
       if (
         response.ok &&
         typeof payload === "object" &&
         payload !== null &&
-        "ready" in payload &&
-        payload.ready === true &&
-        "interval" in payload &&
-        payload.interval === "month"
+        "url" in payload &&
+        typeof payload.url === "string" &&
+        payload.url.startsWith("https://checkout.stripe.com/")
       ) {
-        setResult({ status: "success", ready: true, interval: "month" });
+        window.location.assign(payload.url);
         return;
       }
 
@@ -64,12 +67,17 @@ export default function StripeTestDiagnosticPage() {
   return (
     <main style={{ maxWidth: 560, margin: "48px auto", padding: "0 20px", fontFamily: "system-ui" }}>
       <h1>DIAGNOSTIC STRIPE TEST</h1>
-      <p>Contrôle temporaire de la configuration serveur du Preview. Aucun paiement n’est déclenché.</p>
-      <button type="button" onClick={runDiagnostic} disabled={result.status === "running"}>
-        {result.status === "running" ? "Diagnostic en cours…" : "Tester la configuration TEST"}
+      <p>TEST / SANDBOX uniquement. Aucun paiement réel.</p>
+      {checkoutReturn === "success" && (
+        <p>Retour Checkout TEST reçu. Ce retour ne prouve pas qu’un abonnement est actif.</p>
+      )}
+      {checkoutReturn === "cancelled" && <p>Checkout TEST annulé.</p>}
+      <button type="button" onClick={startSandboxCheckout} disabled={result.status === "running"}>
+        {result.status === "running"
+          ? "Ouverture du Checkout TEST…"
+          : "TEST / SANDBOX — ABONNEMENT TEST MENSUEL — 39 €"}
       </button>
       <div role="status" aria-live="polite" style={{ marginTop: 20 }}>
-        {result.status === "success" && <p>ready: true<br />interval: month</p>}
         {result.status === "error" && <p>{result.code}</p>}
       </div>
     </main>
