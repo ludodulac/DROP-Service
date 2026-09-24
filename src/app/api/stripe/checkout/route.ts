@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
+  createStripeTestClient,
   getStripeTestConfig,
   type StripeTestInterval,
 } from "@/lib/stripe-test-server";
@@ -16,6 +17,13 @@ function noStore(body: object, status: number) {
 
 function isStripeTestInterval(value: unknown): value is StripeTestInterval {
   return value === "month" || value === "year";
+}
+
+function getTrustedOrigin(request: Request) {
+  const origin = new URL(request.url).origin;
+  const expectedHost = "brif-artisans-git-test-stripe-sandbox-checkout-ludo24.vercel.app";
+
+  return new URL(origin).host === expectedHost ? origin : null;
 }
 
 export async function POST(request: Request) {
@@ -65,7 +73,26 @@ export async function POST(request: Request) {
     return noStore({ error: "stripe_test_not_configured" }, 503);
   }
 
-  // Foundation guard: deliberately stop before any Stripe API write.
-  // A later, separately authorized mission may create the Checkout Session.
-  return noStore({ ready: true, interval }, 200);
+  const origin = getTrustedOrigin(request);
+  if (!origin) {
+    return noStore({ error: "invalid_checkout_origin" }, 403);
+  }
+
+  try {
+    const stripe = createStripeTestClient(stripeConfig.secretKey);
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: stripeConfig.priceId, quantity: 1 }],
+      success_url: `${origin}/test/stripe?checkout=success`,
+      cancel_url: `${origin}/test/stripe?checkout=cancelled`,
+    });
+
+    if (!session.url) {
+      return noStore({ error: "checkout_url_unavailable" }, 502);
+    }
+
+    return noStore({ url: session.url }, 200);
+  } catch {
+    return noStore({ error: "checkout_session_failed" }, 502);
+  }
 }
