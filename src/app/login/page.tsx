@@ -66,7 +66,7 @@ export default function LoginPage() {
           </div>
           <form onSubmit={handleSubmit} className="form-grid">
             <label className="field-label">Adresse email
-              <input className="field" required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@entreprise.fr" />
+              <input className="field" required type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@entreprise.fr" />
             </label>
             <label className="field-label">Mot de passe
               <span style={{ position: "relative", display: "block" }}>

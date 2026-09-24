@@ -29,7 +29,9 @@ export default async function RequestPage({ params, searchParams }: { params: Pr
   return (
     <main style={{ padding: "32px 0 64px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        {isOwnerPreview && <aside className="preview-banner"><div><strong>Aperçu de votre page publique</strong><span>Voici ce que voient vos clients.</span></div><Link className="preview-return" href="/dashboard">Retour à mon espace artisan</Link></aside>}
+        {isOwnerPreview && <header className="artisan-preview-header"><p className="artisan-preview-mode">Mode aperçu artisan</p><h1>Vous êtes toujours dans votre espace artisan.</h1><p>Vous prévisualisez le formulaire destiné à vos clients.</p><Link className="preview-return" href="/dashboard">Retour à mon espace artisan</Link></header>}
+        <div className={isOwnerPreview ? "client-preview-frame" : undefined}>
+        {isOwnerPreview && <p className="client-preview-label">Aperçu client</p>}
         <header style={{ marginBottom: 18 }}>
           <p className="eyebrow">Demande d’intervention</p>
           <h1 style={{ marginBottom: 10 }}>Expliquez votre besoin à {artisan.company_name}</h1>
@@ -40,6 +42,7 @@ export default async function RequestPage({ params, searchParams }: { params: Pr
           <RequestForm artisanId={artisan.id} companyName={artisan.company_name} />
         </section>
 
+        </div>
         <footer className="muted" style={{ marginTop: 16, textAlign: "center", fontSize: 12 }}>
           Service de transmission de demandes pour artisans · Ludovic Dulac
         </footer>
