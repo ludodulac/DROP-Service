@@ -92,7 +92,22 @@ export async function POST(request: Request) {
     }
 
     return noStore({ url: session.url }, 200);
-  } catch {
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      const stripeError = error as Error & { type?: unknown; code?: unknown };
+      console.error("stripe_checkout_session_failed", {
+        type: typeof stripeError.type === "string" ? stripeError.type : "unknown",
+        code: typeof stripeError.code === "string" ? stripeError.code : "unknown",
+        message: stripeError.message,
+      });
+    } else {
+      console.error("stripe_checkout_session_failed", {
+        type: "unknown",
+        code: "unknown",
+        message: "Non-Error exception",
+      });
+    }
+
     return noStore({ error: "checkout_session_failed" }, 502);
   }
 }
