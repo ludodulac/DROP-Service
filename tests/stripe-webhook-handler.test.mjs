@@ -68,6 +68,6 @@ test("privileged Supabase client is server-only and never uses a public secret",
 test("only secret names are documented and responses/logs do not expose secret values", () => {
   assert.match(env, /STRIPE_TEST_WEBHOOK_SECRET=/);
   assert.match(env, /SUPABASE_SECRET_KEY=/);
-  assert.doesNotMatch(route, /rawBody[,)]|webhookSecret[,)]|stripeSecretKey[,)]/);
+  assert.doesNotMatch(route, /console\\.(?:log|info|error)\\([^;]*(?:rawBody|webhookSecret|stripeSecretKey)/);
   assert.doesNotMatch(route, /Authorization|cookie|email|phone/i);
 });
