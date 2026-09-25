@@ -73,3 +73,57 @@ test("only secret names are documented and responses/logs do not expose secret v
   }
   assert.doesNotMatch(route, /Authorization|cookie|email|phone/i);
 });
+
+
+test("v2 ping is routed to parseEventNotification and returns before Supabase or Subscription work", () => {
+  const marker = route.indexOf('objectMarker === "v2.core.event"');
+  const parse = route.indexOf("stripe.parseEventNotification", marker);
+  const ping = route.indexOf('eventNotification.type === "v2.core.event_destination.ping"', parse);
+  const pingResponse = route.indexOf('result: "ping"', ping);
+  const supabase = route.indexOf("createPrivilegedSupabaseClient()", marker);
+  const retrieve = route.indexOf("stripe.subscriptions.retrieve", marker);
+  const rpc = route.indexOf(".rpc(", marker);
+
+  assert.ok(marker >= 0 && parse > marker && ping > parse && pingResponse > ping);
+  assert.ok(supabase > pingResponse);
+  assert.ok(retrieve > pingResponse);
+  assert.ok(rpc > pingResponse);
+});
+
+test("authenticated non-ping v2 events are ignored before business logic", () => {
+  const parse = route.indexOf("stripe.parseEventNotification");
+  const ignored = route.indexOf('result: "ignored"', parse);
+  const supabase = route.indexOf("createPrivilegedSupabaseClient()", parse);
+  assert.ok(parse >= 0 && ignored > parse && supabase > ignored);
+});
+
+test("v2 verification failures and malformed JSON return 400 before RPC", () => {
+  assert.match(route, /JSON\.parse\(rawBody\)[\s\S]*invalid_json[\s\S]*invalid_payload[\s\S]*400/);
+  assert.match(route, /parseEventNotification\([\s\S]*invalid_v2_event[\s\S]*invalid_event[\s\S]*400/);
+  const parse = route.indexOf("stripe.parseEventNotification");
+  const rpc = route.indexOf(".rpc(", parse);
+  assert.ok(parse >= 0 && rpc > parse);
+});
+
+test("all three Snapshot event types remain on constructEvent path", () => {
+  const construct = route.indexOf("stripe.webhooks.constructEvent");
+  const handled = route.indexOf("if (!HANDLED_EVENTS.has(event.type))", construct);
+  assert.ok(construct >= 0 && handled > construct);
+  for (const type of [
+    "checkout.session.completed",
+    "customer.subscription.updated",
+    "customer.subscription.deleted",
+  ]) {
+    assert.ok(route.indexOf(type) >= 0);
+  }
+});
+
+test("raw body is read once and pre-parse only selects the protocol", () => {
+  assert.equal(route.match(/await request\.text\(\)/g)?.length, 1);
+  assert.equal(route.match(/JSON\.parse\(rawBody\)/g)?.length, 1);
+  const parseJson = route.indexOf("JSON.parse(rawBody)");
+  const marker = route.indexOf('objectMarker === "v2.core.event"');
+  const v2Verify = route.indexOf("stripe.parseEventNotification", marker);
+  const v1Verify = route.indexOf("stripe.webhooks.constructEvent", marker);
+  assert.ok(parseJson >= 0 && marker > parseJson && v2Verify > marker && v1Verify > marker);
+});
