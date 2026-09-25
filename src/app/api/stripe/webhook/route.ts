@@ -138,13 +138,46 @@ export async function POST(request: Request) {
   }
 
   const config = getServerConfig();
-  const supabase = createPrivilegedSupabaseClient();
-  if (!config || !supabase) {
+  if (!config) {
     logWebhookError("server_not_configured");
     return response({ error: "server_not_configured" }, 503);
   }
 
   const stripe = createStripeTestClient(config.stripeSecretKey);
+
+  let objectMarker: unknown;
+  try {
+    const envelope = JSON.parse(rawBody) as { object?: unknown };
+    objectMarker = envelope.object;
+  } catch {
+    logWebhookError("invalid_json");
+    return response({ error: "invalid_payload" }, 400);
+  }
+
+  if (objectMarker === "v2.core.event") {
+    let eventNotification: Stripe.V2.Core.EventNotification;
+    try {
+      eventNotification = stripe.parseEventNotification(
+        rawBody,
+        signature,
+        config.webhookSecret,
+      );
+    } catch (error: unknown) {
+      const code =
+        error instanceof Error &&
+        typeof (error as Error & { code?: unknown }).code === "string"
+          ? String((error as Error & { code?: unknown }).code)
+          : undefined;
+      logWebhookError("invalid_v2_event", undefined, code);
+      return response({ error: "invalid_event" }, 400);
+    }
+
+    if (eventNotification.type === "v2.core.event_destination.ping") {
+      return response({ received: true, result: "ping" }, 200);
+    }
+
+    return response({ received: true, result: "ignored" }, 200);
+  }
 
   let event: Stripe.Event;
   try {
@@ -161,6 +194,12 @@ export async function POST(request: Request) {
         : undefined;
     logWebhookError("invalid_signature", undefined, code);
     return response({ error: "invalid_signature" }, 400);
+  }
+
+  const supabase = createPrivilegedSupabaseClient();
+  if (!supabase) {
+    logWebhookError("server_not_configured", event.type);
+    return response({ error: "server_not_configured" }, 503);
   }
 
   if (event.livemode !== false) {
