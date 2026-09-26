@@ -36,8 +36,8 @@ test("browser authority remains interval only", () => {
 
 test("month and year resolve server-side prices", () => {
   assert.match(route, /value === "month" \|\| value === "year"/);
-  assert.match(stripeConfig, /config\\.monthlyPrice/);
-  assert.match(stripeConfig, /config\\.yearlyPrice/);
+  assert.ok(stripeConfig.includes("config.monthlyPrice"));
+  assert.ok(stripeConfig.includes("config.yearlyPrice"));
 });
 
 test("Checkout returns to dashboard", () => {
