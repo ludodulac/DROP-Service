@@ -19,6 +19,10 @@ export function getStripeTestConfig(interval: StripeTestInterval) {
   };
 }
 
+export function getStripeTestSecretKey() {
+  return process.env.STRIPE_TEST_SECRET_KEY || null;
+}
+
 export function createStripeTestClient(secretKey: string) {
   return new Stripe(secretKey);
 }
