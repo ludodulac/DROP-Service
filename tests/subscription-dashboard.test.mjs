@@ -5,11 +5,9 @@ import { readFileSync } from "node:fs";
 const dashboard = readFileSync("src/app/dashboard/page.tsx", "utf8");
 const presentation = readFileSync("src/lib/subscription-presentation.ts", "utf8");
 
-test("dashboard reads only the authenticated artisan subscription through the existing browser client", () => {
-  assert.match(dashboard, /from\("drop_service_subscriptions"\)/);
-  assert.match(dashboard, /\.select\("status, billing_interval, current_period_end, cancel_at_period_end"\)/);
-  assert.match(dashboard, /\.eq\("artisan_id", artisanData\.id\)/);
-  assert.match(dashboard, /\.maybeSingle\(\)/);
+test("dashboard reads subscription only through the server environment route", () => {
+  assert.match(dashboard, /fetch\("\/api\/subscription", \{ cache: "no-store" \}\)/);
+  assert.doesNotMatch(dashboard, /from\("drop_service_subscriptions"\)/);
   assert.doesNotMatch(dashboard, /service_role|SUPABASE_SECRET_KEY/);
 });
 
