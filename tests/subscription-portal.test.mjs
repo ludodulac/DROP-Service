@@ -42,9 +42,10 @@ test("browser supplies no authoritative identity or return URL fields", () => {
   assert.match(dashboard, /fetch\("\/api\/stripe\/portal", \{ method: "POST" \}\)/);
 });
 
-test("portal is pinned to sandbox configuration and Preview dashboard return", () => {
-  assert.match(route, /PORTAL_CONFIGURATION_ID = "bpc_/);
-  assert.match(route, /PREVIEW_HOST = "brif-artisans-git-test-stripe-sandbox-checkout-ludo24\.vercel\.app"/);
+test("portal uses the server-selected configuration, environment and canonical return", () => {
+  assert.match(route, /getStripeServerConfig\(\)/);
+  assert.match(route, /\.eq\("stripe_environment", config\.environment\)/);
+  assert.match(route, /configuration: config\.portalConfigurationId/);
   assert.match(route, /return_url: `\$\{origin\}\/dashboard`/);
   assert.match(route, /Cache-Control": "private, no-store"/);
 });
