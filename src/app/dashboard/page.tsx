@@ -11,6 +11,7 @@ import {
   type SubscriptionDisplayInput,
 } from "@/lib/subscription-presentation";
 import { canStartSubscriptionCheckout } from "@/lib/subscription-checkout-policy";
+import { canManageSubscriptionInPortal } from "@/lib/subscription-portal-policy";
 
 type Artisan = { id: string; company_name: string; slug: string };
 type RequestRow = {
@@ -46,6 +47,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [checkoutInterval, setCheckoutInterval] = useState<"month" | "year" | null>(null);
   const [checkoutReturn, setCheckoutReturn] = useState<string | null>(null);
+  const [portalOpening, setPortalOpening] = useState(false);
 
   useEffect(() => {
     setCheckoutReturn(new URLSearchParams(window.location.search).get("checkout"));
@@ -128,6 +130,31 @@ export default function DashboardPage() {
     }
   }
 
+  async function openPortal() {
+    setPortalOpening(true);
+    setError("");
+    try {
+      const response = await fetch("/api/stripe/portal", { method: "POST" });
+      const payload: unknown = await response.json();
+      if (
+        response.ok &&
+        typeof payload === "object" &&
+        payload !== null &&
+        "url" in payload &&
+        typeof payload.url === "string" &&
+        payload.url.startsWith("https://billing.stripe.com/")
+      ) {
+        window.location.assign(payload.url);
+        return;
+      }
+      setError("La gestion de votre abonnement n’a pas pu être ouverte. Réessayez.");
+    } catch {
+      setError("La gestion de votre abonnement n’a pas pu être ouverte. Réessayez.");
+    } finally {
+      setPortalOpening(false);
+    }
+  }
+
   async function updateStatus(id: string, status: RequestRow["status"]) {
     const { error: updateError } = await supabase.from("drop_service_requests").update({ status }).eq("id", id);
     if (updateError) { setError("Le statut n’a pas pu être mis à jour. Réessayez."); return; }
@@ -202,6 +229,13 @@ export default function DashboardPage() {
               </>
             ) : (
               <p className="muted">Aucun abonnement actif</p>
+            )}
+            {subscription && canManageSubscriptionInPortal(subscription.status) && (
+              <div style={{ marginTop: 14 }}>
+                <button className="button" type="button" disabled={portalOpening} onClick={() => void openPortal()}>
+                  {portalOpening ? "Ouverture…" : "Gérer mon abonnement"}
+                </button>
+              </div>
             )}
             {canStartSubscriptionCheckout(subscription?.status) && (
               <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
