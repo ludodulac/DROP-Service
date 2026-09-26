@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { canStartSubscriptionCheckout } from "@/lib/subscription-checkout-policy";
-import {
-  createStripeTestClient,
-  getStripeTestConfig,
-  type StripeTestInterval,
-} from "@/lib/stripe-test-server";
+import { createStripeClient, getStripePrice, getStripeServerConfig, trustedStripeOrigin, type StripeInterval } from "@/lib/stripe-server";
 
 export const dynamic = "force-dynamic";
 
@@ -16,18 +12,14 @@ function noStore(body: object, status: number) {
   });
 }
 
-function isStripeTestInterval(value: unknown): value is StripeTestInterval {
+function isStripeInterval(value: unknown): value is StripeInterval {
   return value === "month" || value === "year";
 }
 
-function getTrustedOrigin(request: Request) {
-  const origin = new URL(request.url).origin;
-  const expectedHost = "brif-artisans-git-test-stripe-sandbox-checkout-ludo24.vercel.app";
-
-  return new URL(origin).host === expectedHost ? origin : null;
-}
-
 export async function POST(request: Request) {
+  const config = getStripeServerConfig();
+  if (!config) return noStore({ error: "stripe_environment_not_configured" }, 503);
+
   const supabase = await createServerSupabaseClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();
 
@@ -57,6 +49,7 @@ export async function POST(request: Request) {
     .from("drop_service_subscriptions")
     .select("status")
     .eq("artisan_id", artisan.id)
+    .eq("stripe_environment", config.environment)
     .maybeSingle();
 
   if (subscriptionError) {
@@ -79,25 +72,21 @@ export async function POST(request: Request) {
       ? (body as { interval?: unknown }).interval
       : undefined;
 
-  if (!isStripeTestInterval(interval)) {
+  if (!isStripeInterval(interval)) {
     return noStore({ error: "invalid_interval" }, 400);
   }
 
-  const stripeConfig = getStripeTestConfig(interval);
-  if (!stripeConfig) {
-    return noStore({ error: "stripe_test_not_configured" }, 503);
-  }
-
-  const origin = getTrustedOrigin(request);
+  const priceId = getStripePrice(config, interval);
+  const origin = trustedStripeOrigin(request, config);
   if (!origin) {
     return noStore({ error: "invalid_checkout_origin" }, 403);
   }
 
   try {
-    const stripe = createStripeTestClient(stripeConfig.secretKey);
+    const stripe = createStripeClient(config.secretKey);
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: stripeConfig.priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: artisan.id,
       subscription_data: {
         metadata: {
