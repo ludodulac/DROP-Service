@@ -49,7 +49,8 @@ test("Price, amount, currency, interval, item count and status are validated", (
 
 test("RPC receives only validated server-side subscription data and handles idempotent results", () => {
   assert.match(route, /\.rpc\(\s*"drop_service_process_stripe_subscription_event"/);
-  assert.match(route, /p_stripe_event_id: event\.id/);\n  assert.match(route, /p_stripe_environment: config\.environment/);
+  assert.match(route, /p_stripe_event_id: event\.id/);
+  assert.match(route, /p_stripe_environment: config\.environment/);
   assert.match(route, /p_artisan_id: validated\.artisanId/);
   assert.match(route, /p_stripe_price_id: validated\.priceId/);
   assert.match(route, /rpcResult !== "processed" && rpcResult !== "already_processed"/);
