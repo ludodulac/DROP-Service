@@ -72,16 +72,21 @@ export default function DashboardPage() {
     if (!artisanData) { router.replace("/onboarding"); return; }
     setArtisan(artisanData);
 
-    const { data: subscriptionData, error: subscriptionError } = await supabase
-      .from("drop_service_subscriptions")
-      .select("status, billing_interval, current_period_end, cancel_at_period_end")
-      .eq("artisan_id", artisanData.id)
-      .maybeSingle();
-
-    if (subscriptionError) {
+    try {
+      const subscriptionResponse = await fetch("/api/subscription", { cache: "no-store" });
+      const subscriptionPayload: unknown = await subscriptionResponse.json();
+      if (
+        subscriptionResponse.ok &&
+        typeof subscriptionPayload === "object" &&
+        subscriptionPayload !== null &&
+        "subscription" in subscriptionPayload
+      ) {
+        setSubscription((subscriptionPayload as { subscription: SubscriptionDisplayInput | null }).subscription);
+      } else {
+        setError("Votre abonnement n’a pas pu être chargé. Vos demandes restent accessibles.");
+      }
+    } catch {
       setError("Votre abonnement n’a pas pu être chargé. Vos demandes restent accessibles.");
-    } else {
-      setSubscription(subscriptionData as SubscriptionDisplayInput | null);
     }
 
     const { data: requestData, error: requestError } = await supabase
