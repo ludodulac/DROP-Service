@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { canManageSubscriptionInPortal } from "@/lib/subscription-portal-policy";
-import { createStripeTestClient, getStripeTestSecretKey } from "@/lib/stripe-test-server";
+import { createStripeClient, getStripeServerConfig, trustedStripeOrigin } from "@/lib/stripe-server";
 
 export const dynamic = "force-dynamic";
-
-const PORTAL_CONFIGURATION_ID = "bpc_1UJvhB3kIID3Yaiqsgvjgcla";
-const PREVIEW_HOST = "brif-artisans-git-test-stripe-sandbox-checkout-ludo24.vercel.app";
 
 function noStore(body: object, status: number) {
   return NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 }
 
-function getTrustedOrigin(request: Request) {
-  const origin = new URL(request.url).origin;
-  return new URL(origin).host === PREVIEW_HOST ? origin : null;
-}
-
 export async function POST(request: Request) {
+  const config = getStripeServerConfig();
+  if (!config) return noStore({ error: "stripe_environment_not_configured" }, 503);
   const supabase = await createServerSupabaseClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError || !authData.user) return noStore({ error: "not_authenticated" }, 401);
@@ -31,7 +25,7 @@ export async function POST(request: Request) {
 
   const { data: subscription, error: subscriptionError } = await supabase
     .from("drop_service_subscriptions").select("status, stripe_customer_id")
-    .eq("artisan_id", artisan.id).maybeSingle();
+    .eq("artisan_id", artisan.id).eq("stripe_environment", config.environment).maybeSingle();
   if (subscriptionError) return noStore({ error: "subscription_lookup_failed" }, 500);
   if (!subscription) return noStore({ error: "subscription_not_found" }, 404);
   if (!canManageSubscriptionInPortal(subscription.status)) {
@@ -39,16 +33,14 @@ export async function POST(request: Request) {
   }
   if (!subscription.stripe_customer_id) return noStore({ error: "subscription_customer_missing" }, 409);
 
-  const origin = getTrustedOrigin(request);
+  const origin = trustedStripeOrigin(request, config);
   if (!origin) return noStore({ error: "invalid_portal_origin" }, 403);
-  const secretKey = getStripeTestSecretKey();
-  if (!secretKey) return noStore({ error: "stripe_test_not_configured" }, 503);
 
   try {
-    const stripe = createStripeTestClient(secretKey);
+    const stripe = createStripeClient(config.secretKey);
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
-      configuration: PORTAL_CONFIGURATION_ID,
+      configuration: config.portalConfigurationId,
       return_url: `${origin}/dashboard`,
     });
     return noStore({ url: session.url }, 200);
