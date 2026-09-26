@@ -15,8 +15,8 @@ test("webhook verifies the raw body and requires Stripe signature", () => {
   assert.match(route, /if \(!signature\)[\s\S]*missing_signature[\s\S]*400/);
 });
 
-test("sandbox boundary and event allowlist are explicit", () => {
-  assert.match(route, /event\.livemode !== false/);
+test("server-selected livemode boundary and event allowlist are explicit", () => {
+  assert.match(route, /event\.livemode !== config\.expectedLivemode/);
   assert.match(route, /checkout\.session\.completed/);
   assert.match(route, /customer\.subscription\.updated/);
   assert.match(route, /customer\.subscription\.deleted/);
@@ -49,7 +49,7 @@ test("Price, amount, currency, interval, item count and status are validated", (
 
 test("RPC receives only validated server-side subscription data and handles idempotent results", () => {
   assert.match(route, /\.rpc\(\s*"drop_service_process_stripe_subscription_event"/);
-  assert.match(route, /p_stripe_event_id: event\.id/);
+  assert.match(route, /p_stripe_event_id: event\.id/);\n  assert.match(route, /p_stripe_environment: config\.environment/);
   assert.match(route, /p_artisan_id: validated\.artisanId/);
   assert.match(route, /p_stripe_price_id: validated\.priceId/);
   assert.match(route, /rpcResult !== "processed" && rpcResult !== "already_processed"/);
