@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { canStartSubscriptionCheckout } from "@/lib/subscription-checkout-policy";
 import {
   createStripeTestClient,
   getStripeTestConfig,
@@ -52,6 +53,20 @@ export async function POST(request: Request) {
     return noStore({ error: "artisan_inactive" }, 403);
   }
 
+  const { data: existingSubscription, error: subscriptionError } = await supabase
+    .from("drop_service_subscriptions")
+    .select("status")
+    .eq("artisan_id", artisan.id)
+    .maybeSingle();
+
+  if (subscriptionError) {
+    return noStore({ error: "subscription_lookup_failed" }, 500);
+  }
+
+  if (!canStartSubscriptionCheckout(existingSubscription?.status)) {
+    return noStore({ error: "subscription_checkout_blocked" }, 409);
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -89,8 +104,8 @@ export async function POST(request: Request) {
           brief_artisan_id: artisan.id,
         },
       },
-      success_url: `${origin}/test/stripe?checkout=success`,
-      cancel_url: `${origin}/test/stripe?checkout=cancelled`,
+      success_url: `${origin}/dashboard?checkout=success`,
+      cancel_url: `${origin}/dashboard?checkout=cancel`,
     });
 
     if (!session.url) {
