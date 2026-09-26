@@ -5,6 +5,7 @@ export default function MentionsLegales() {
     <p className="eyebrow">BRIF</p><h1>Mentions légales</h1>
     <h2>Éditeur</h2>
     <p>BRIF est édité par Ludovic Nicolas DULAC EI, entrepreneur individuel (micro-entrepreneur).</p>
+    <p>SIREN : 811 336 205.<br/>SIRET : 811 336 205 00034.</p>
     <p>Adresse : 50 rue Poullic Al Lor, 29200 Brest, France.<br/>E-mail : ludodulac@gmail.com.</p>
     <p>Téléphone : 06 14 19 59 43.</p>
     <p>Directeur de la publication : Ludovic Nicolas DULAC.</p>
