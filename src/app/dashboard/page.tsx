@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+  getBillingLabel,
+  getSubscriptionPeriodLabel,
+  subscriptionStatusLabels,
+  type SubscriptionDisplayInput,
+} from "@/lib/subscription-presentation";
 
 type Artisan = { id: string; company_name: string; slug: string };
 type RequestRow = {
@@ -34,6 +40,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [artisan, setArtisan] = useState<Artisan | null>(null);
   const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [subscription, setSubscription] = useState<SubscriptionDisplayInput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -56,6 +63,18 @@ export default function DashboardPage() {
     if (artisanError) { setError(artisanError.message); setLoading(false); return; }
     if (!artisanData) { router.replace("/onboarding"); return; }
     setArtisan(artisanData);
+
+    const { data: subscriptionData, error: subscriptionError } = await supabase
+      .from("drop_service_subscriptions")
+      .select("status, billing_interval, current_period_end, cancel_at_period_end")
+      .eq("artisan_id", artisanData.id)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      setError("Votre abonnement n’a pas pu être chargé. Vos demandes restent accessibles.");
+    } else {
+      setSubscription(subscriptionData as SubscriptionDisplayInput | null);
+    }
 
     const { data: requestData, error: requestError } = await supabase
       .from("drop_service_requests")
@@ -120,6 +139,26 @@ export default function DashboardPage() {
         </section>
 
         {error && <div className="alert-error" role="alert">{error}</div>}
+
+        <section className="card" aria-labelledby="subscription-heading" style={{ marginBottom: 20 }}>
+          <p className="eyebrow" id="subscription-heading">Abonnement</p>
+          {subscription ? (
+            <div>
+              <strong>
+                {subscriptionStatusLabels[subscription.status]}
+                {getBillingLabel(subscription.billing_interval) ? ` · ${getBillingLabel(subscription.billing_interval)}` : ""}
+              </strong>
+              {getSubscriptionPeriodLabel(subscription) && (
+                <p className="muted" style={{ marginBottom: subscription.cancel_at_period_end ? 8 : 0 }}>
+                  {getSubscriptionPeriodLabel(subscription)}
+                </p>
+              )}
+              {subscription.cancel_at_period_end && <span className="badge badge-warning">Annulation programmée</span>}
+            </div>
+          ) : (
+            <p className="muted" style={{ marginBottom: 0 }}>Aucun abonnement actif</p>
+          )}
+        </section>
 
         <section className="attention-panel" aria-label="À traiter">
           <div>
