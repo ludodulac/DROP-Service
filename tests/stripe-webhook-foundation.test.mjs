@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const route = readFileSync("src/app/api/stripe/checkout/route.ts", "utf8");
-const migration = readFileSync("supabase/migrations/20260924_add_drop_service_stripe_events.sql", "utf8");
+const migration = readFileSync("supabase/migrations/20260924_add_drop_service_stripe_events.sql", "utf8");\nconst environmentMigration = readFileSync("supabase/migrations/20260926_stripe_environment_separation.sql", "utf8");
 
 test("Checkout correlates the server-resolved artisan to Session and Subscription", () => {
   assert.match(route, /client_reference_id:\s*artisan\.id/);
