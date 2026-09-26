@@ -10,6 +10,7 @@ import {
   subscriptionStatusLabels,
   type SubscriptionDisplayInput,
 } from "@/lib/subscription-presentation";
+import { canStartSubscriptionCheckout } from "@/lib/subscription-checkout-policy";
 
 type Artisan = { id: string; company_name: string; slug: string };
 type RequestRow = {
@@ -43,8 +44,13 @@ export default function DashboardPage() {
   const [subscription, setSubscription] = useState<SubscriptionDisplayInput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [checkoutInterval, setCheckoutInterval] = useState<"month" | "year" | null>(null);
+  const [checkoutReturn, setCheckoutReturn] = useState<string | null>(null);
 
-  useEffect(() => { void loadDashboard(); }, []);
+  useEffect(() => {
+    setCheckoutReturn(new URLSearchParams(window.location.search).get("checkout"));
+    void loadDashboard();
+  }, []);
 
   async function loadDashboard() {
     setLoading(true);
@@ -85,6 +91,41 @@ export default function DashboardPage() {
     if (requestError) setError(requestError.message);
     else setRequests((requestData ?? []) as RequestRow[]);
     setLoading(false);
+  }
+
+  async function startCheckout(interval: "month" | "year") {
+    setCheckoutInterval(interval);
+    setError("");
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interval }),
+      });
+      const payload: unknown = await response.json();
+      if (
+        response.ok &&
+        typeof payload === "object" &&
+        payload !== null &&
+        "url" in payload &&
+        typeof payload.url === "string" &&
+        payload.url.startsWith("https://checkout.stripe.com/")
+      ) {
+        window.location.assign(payload.url);
+        return;
+      }
+      const code =
+        typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string"
+          ? payload.error
+          : "checkout_failed";
+      setError(code === "subscription_checkout_blocked"
+        ? "Un abonnement est déjà en cours. Aucun nouvel abonnement n’a été créé."
+        : "Le Checkout n’a pas pu être ouvert. Réessayez.");
+    } catch {
+      setError("Le Checkout n’a pas pu être ouvert. Réessayez.");
+    } finally {
+      setCheckoutInterval(null);
+    }
   }
 
   async function updateStatus(id: string, status: RequestRow["status"]) {
@@ -139,25 +180,40 @@ export default function DashboardPage() {
         </section>
 
         {error && <div className="alert-error" role="alert">{error}</div>}
+        {checkoutReturn === "success" && !subscription && (
+          <div className="alert-info" role="status">Paiement terminé. Vérification de votre abonnement en cours.</div>
+        )}
 
         <section className="card" aria-labelledby="subscription-heading" style={{ marginBottom: 20 }}>
           <p className="eyebrow" id="subscription-heading">Abonnement</p>
-          {subscription ? (
-            <div>
-              <strong>
-                {subscriptionStatusLabels[subscription.status]}
-                {getBillingLabel(subscription.billing_interval) ? ` · ${getBillingLabel(subscription.billing_interval)}` : ""}
-              </strong>
-              {getSubscriptionPeriodLabel(subscription) && (
-                <p className="muted" style={{ marginBottom: subscription.cancel_at_period_end ? 8 : 0 }}>
-                  {getSubscriptionPeriodLabel(subscription)}
-                </p>
-              )}
-              {subscription.cancel_at_period_end && <span className="badge badge-warning">Annulation programmée</span>}
-            </div>
-          ) : (
-            <p className="muted" style={{ marginBottom: 0 }}>Aucun abonnement actif</p>
-          )}
+          <div>
+            {subscription ? (
+              <>
+                <strong>
+                  {subscriptionStatusLabels[subscription.status]}
+                  {getBillingLabel(subscription.billing_interval) ? ` · ${getBillingLabel(subscription.billing_interval)}` : ""}
+                </strong>
+                {getSubscriptionPeriodLabel(subscription) && (
+                  <p className="muted" style={{ marginBottom: subscription.cancel_at_period_end ? 8 : 0 }}>
+                    {getSubscriptionPeriodLabel(subscription)}
+                  </p>
+                )}
+                {subscription.cancel_at_period_end && <span className="badge badge-warning">Annulation programmée</span>}
+              </>
+            ) : (
+              <p className="muted">Aucun abonnement actif</p>
+            )}
+            {canStartSubscriptionCheckout(subscription?.status) && (
+              <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+                <button className="button" type="button" disabled={checkoutInterval !== null} onClick={() => void startCheckout("month")}>
+                  {checkoutInterval === "month" ? "Ouverture…" : "Choisir le mensuel — 39 €/mois"}
+                </button>
+                <button className="button" type="button" disabled={checkoutInterval !== null} onClick={() => void startCheckout("year")}>
+                  {checkoutInterval === "year" ? "Ouverture…" : "Choisir l’annuel — 390 €/an"}
+                </button>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="attention-panel" aria-label="À traiter">
