@@ -12,7 +12,7 @@ test("Checkout correlates the server-resolved artisan to Session and Subscriptio
 });
 
 test("browser authority is limited to interval", () => {
-  const bodySection = route.slice(route.indexOf("let body: unknown"), route.indexOf("const stripeConfig"));
+  const bodySection = route.slice(route.indexOf("let body: unknown"), route.indexOf("const priceId"));
   assert.match(bodySection, /"interval" in body/);
   assert.doesNotMatch(bodySection, /artisan_id|client_reference_id|customer_id|subscription_id|price_id|metadata/i);
 });
