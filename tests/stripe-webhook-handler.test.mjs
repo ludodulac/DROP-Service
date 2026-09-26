@@ -127,3 +127,12 @@ test("raw body is read once and pre-parse only selects the protocol", () => {
   const v1Verify = route.indexOf("stripe.webhooks.constructEvent", marker);
   assert.ok(parseJson >= 0 && marker > parseJson && v2Verify > marker && v1Verify > marker);
 });
+
+test("server config diagnostics expose names only after verified Snapshot event", () => {
+  const construct = route.indexOf("stripe.webhooks.constructEvent");
+  const diagnostic = route.indexOf("const missingConfig = [", construct);
+  assert.ok(construct >= 0 && diagnostic > construct);
+  assert.match(route, /!process\.env\.NEXT_PUBLIC_SUPABASE_URL \? "NEXT_PUBLIC_SUPABASE_URL" : null/);
+  assert.match(route, /!process\.env\.SUPABASE_SECRET_KEY \? "SUPABASE_SECRET_KEY" : null/);
+  assert.doesNotMatch(route.slice(diagnostic), /missingConfig:\s*process\.env/);
+});
