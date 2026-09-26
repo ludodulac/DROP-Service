@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createPrivilegedSupabaseClient } from "@/lib/supabase-privileged-server";
-import { createStripeTestClient } from "@/lib/stripe-test-server";
+import { createStripeClient, getStripeServerConfig, type StripeServerConfig } from "@/lib/stripe-server";
 
 export const dynamic = "force-dynamic";
 
@@ -41,19 +41,6 @@ function logWebhookError(category: string, eventType?: string, code?: string) {
   });
 }
 
-function getServerConfig() {
-  const stripeSecretKey = process.env.STRIPE_TEST_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_TEST_WEBHOOK_SECRET;
-  const monthlyPrice = process.env.STRIPE_TEST_PRICE_MONTHLY;
-  const yearlyPrice = process.env.STRIPE_TEST_PRICE_YEARLY;
-
-  if (!stripeSecretKey || !webhookSecret || !monthlyPrice || !yearlyPrice) {
-    return null;
-  }
-
-  return { stripeSecretKey, webhookSecret, monthlyPrice, yearlyPrice };
-}
-
 function stripeId(value: string | { id: string } | null): string | null {
   if (typeof value === "string") return value;
   return value?.id || null;
@@ -86,9 +73,9 @@ function getCurrentPeriodEnd(subscription: Stripe.Subscription) {
 
 function validateSubscription(
   subscription: Stripe.Subscription,
-  config: { monthlyPrice: string; yearlyPrice: string },
+  config: StripeServerConfig,
 ) {
-  if (subscription.livemode !== false) return null;
+  if (subscription.livemode !== config.expectedLivemode) return null;
   if (subscription.items.data.length !== 1) return null;
 
   const item = subscription.items.data[0];
@@ -97,7 +84,7 @@ function validateSubscription(
   const isYearly = price.id === config.yearlyPrice;
 
   if (!isMonthly && !isYearly) return null;
-  if (price.livemode !== false || price.currency !== "eur") return null;
+  if (price.livemode !== config.expectedLivemode || price.currency !== "eur") return null;
 
   const expectedAmount = isMonthly ? 3900 : 39000;
   const expectedInterval = isMonthly ? "month" : "year";
@@ -137,13 +124,13 @@ export async function POST(request: Request) {
     return response({ error: "missing_signature" }, 400);
   }
 
-  const config = getServerConfig();
+  const config = getStripeServerConfig();
   if (!config) {
     logWebhookError("server_not_configured");
     return response({ error: "server_not_configured" }, 503);
   }
 
-  const stripe = createStripeTestClient(config.stripeSecretKey);
+  const stripe = createStripeClient(config.secretKey);
 
   let objectMarker: unknown;
   try {
@@ -212,7 +199,7 @@ export async function POST(request: Request) {
     return response({ error: "server_not_configured" }, 503);
   }
 
-  if (event.livemode !== false) {
+  if (event.livemode !== config.expectedLivemode) {
     logWebhookError("invalid_livemode", event.type);
     return response({ error: "invalid_livemode" }, 400);
   }
@@ -305,6 +292,7 @@ export async function POST(request: Request) {
     .from("drop_service_subscriptions")
     .select("artisan_id")
     .eq("stripe_subscription_id", validated.subscriptionId)
+    .eq("stripe_environment", config.environment)
     .maybeSingle();
 
   if (knownError) {
@@ -324,6 +312,7 @@ export async function POST(request: Request) {
     {
       p_stripe_event_id: event.id,
       p_event_type: event.type,
+      p_stripe_environment: config.environment,
       p_artisan_id: validated.artisanId,
       p_stripe_customer_id: validated.customerId,
       p_stripe_subscription_id: validated.subscriptionId,
