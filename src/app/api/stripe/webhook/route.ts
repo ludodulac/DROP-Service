@@ -198,7 +198,17 @@ export async function POST(request: Request) {
 
   const supabase = createPrivilegedSupabaseClient();
   if (!supabase) {
-    logWebhookError("server_not_configured", event.type);
+    const missingConfig = [
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ? "NEXT_PUBLIC_SUPABASE_URL" : null,
+      !process.env.SUPABASE_SECRET_KEY ? "SUPABASE_SECRET_KEY" : null,
+    ].filter((name): name is string => name !== null);
+
+    console.error("stripe_webhook_error", {
+      category: "server_not_configured",
+      eventType: event.type,
+      code: "unknown",
+      missingConfig,
+    });
     return response({ error: "server_not_configured" }, 503);
   }
 
