@@ -101,13 +101,13 @@ export default function RequestForm({ artisanId, companyName }: Props) {
         <h2 id="besoin-title" className="form-section-title">Votre besoin</h2>
 
         <label className="field-label">
-          Quel est le problème ?
+          Quel est votre besoin ?
           <select name="category" required className="field" defaultValue="">
             <option value="" disabled>Choisir un type de besoin</option>
-            <option value="Fuite">Fuite ou recherche de fuite</option>
-            <option value="Chauffage">Chauffage</option>
-            <option value="Installation">Installation ou remplacement</option>
-            <option value="Autre">Autre besoin</option>
+            <option value="Dépannage / problème">Dépannage / problème</option>
+            <option value="Installation / remplacement">Installation / remplacement</option>
+            <option value="Entretien / intervention">Entretien / intervention</option>
+            <option value="Autre demande">Autre demande</option>
           </select>
         </label>
 
@@ -128,7 +128,7 @@ export default function RequestForm({ artisanId, companyName }: Props) {
         <label className="field-label">
           Décrivez ce qui se passe
           <span className="field-help">Quelques phrases suffisent : ce que vous constatez, depuis quand, et ce qui a déjà été essayé.</span>
-          <textarea name="description" required minLength={5} rows={5} className="field" placeholder="Ex. Fuite sous l’évier depuis ce matin, l’eau coule dès que j’ouvre le robinet." />
+          <textarea name="description" required minLength={5} rows={5} className="field" placeholder="Ex. Décrivez ce qui se passe, depuis quand et ce dont vous avez besoin." />
         </label>
 
         <label className="field-label">
