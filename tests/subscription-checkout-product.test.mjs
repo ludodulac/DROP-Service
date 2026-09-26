@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const policy = readFileSync("src/lib/subscription-checkout-policy.ts", "utf8");
 const route = readFileSync("src/app/api/stripe/checkout/route.ts", "utf8");
 const dashboard = readFileSync("src/app/dashboard/page.tsx", "utf8");
-const stripeConfig = readFileSync("src/lib/stripe-test-server.ts", "utf8");
+const stripeConfig = readFileSync("src/lib/stripe-server.ts", "utf8");
 
 test("policy allows only no row, inactive, canceled and incomplete_expired", () => {
   assert.match(policy, /status === null \|\| status === undefined/);
@@ -29,14 +29,14 @@ test("server subscription decision happens before Stripe Checkout creation", () 
 });
 
 test("browser authority remains interval only", () => {
-  const body = route.slice(route.indexOf("let body: unknown"), route.indexOf("const stripeConfig"));
+  const body = route.slice(route.indexOf("let body: unknown"), route.indexOf("const priceId"));
   assert.match(body, /"interval" in body/);
   assert.doesNotMatch(body, /artisan_id|price_id|subscription_status|client_reference_id/i);
 });
 
 test("month and year resolve server-side prices", () => {
   assert.match(route, /value === "month" \|\| value === "year"/);
-  assert.match(stripeConfig, /interval === "month" \? monthlyPrice : yearlyPrice/);
+  assert.match(stripeConfig, /interval === "month" ? config.monthlyPrice : config.yearlyPrice/);
 });
 
 test("Checkout returns to dashboard", () => {
