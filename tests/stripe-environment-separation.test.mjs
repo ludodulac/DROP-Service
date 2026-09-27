@@ -25,7 +25,8 @@ test("server config keeps TEST and LIVE credentials, prices, portal and host in 
   assert.match(config, /expectedLivemode: false/);
   assert.match(config, /expectedLivemode: true/);
   assert.match(config, /bpc_1UJvhB3kIID3Yaiqsgvjgcla/);
-  assert.match(config, /drop-service-swart\.vercel\.app/);
+  assert.match(config, /brif-artisans\.vercel\.app/);
+  assert.doesNotMatch(config, /drop-service-swart\.vercel\.app/);
 });
 
 test("browser cannot select environment or authoritative Stripe identifiers", () => {
