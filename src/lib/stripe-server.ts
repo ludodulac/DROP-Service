@@ -17,7 +17,7 @@ export type StripeServerConfig = {
 };
 
 const PREVIEW_HOST = "brif-artisans-git-test-stripe-sandbox-checkout-ludo24.vercel.app";
-const PRODUCTION_HOST = "drop-service-swart.vercel.app";
+const PRODUCTION_HOST = "brif-artisans.vercel.app";
 const TEST_PORTAL_CONFIGURATION_ID = "bpc_1UJvhB3kIID3Yaiqsgvjgcla";
 
 export function getStripeEnvironment(vercelEnv = process.env.VERCEL_ENV): StripeEnvironment | null {
