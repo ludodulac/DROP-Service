@@ -18,7 +18,7 @@ test("public request form uses trade-neutral categories and preserves the reques
   for (const field of ["category", "city", "urgency", "description", "availability", "customerName", "customerPhone", "customerEmail", "photos"]) {
     assert.match(form, new RegExp(field));
   }
-  assert.match(form, /from\("drop_service_requests"\)\.insert/);
+  assert.match(form, /fetch\("\/api\/requests"/);\n  assert.doesNotMatch(form, /from\("drop_service_requests"\)\.insert/);
 });
 
 test("existing request categories remain displayable without a new category enum", () => {
