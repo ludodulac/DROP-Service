@@ -30,22 +30,35 @@ export default function RequestForm({ artisanId, companyName }: Props) {
       return;
     }
 
-    const requestId = crypto.randomUUID();
-    const { error: requestError } = await supabase.from("drop_service_requests").insert({
-      id: requestId,
-      artisan_id: artisanId,
-      customer_name: String(form.get("customerName") ?? "").trim(),
-      phone: String(form.get("customerPhone") ?? "").trim(),
-      email: String(form.get("customerEmail") ?? "").trim() || null,
-      city: String(form.get("city") ?? "").trim(),
-      category: String(form.get("category") ?? "").trim(),
-      urgency: String(form.get("urgency") ?? "normal"),
-      description: String(form.get("description") ?? "").trim(),
-      availability: String(form.get("availability") ?? "").trim() || null,
-      status: "new",
-    });
-
-    if (requestError) {
+    let requestId: string;
+    try {
+      const response = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artisanId,
+          customerName: String(form.get("customerName") ?? "").trim(),
+          customerPhone: String(form.get("customerPhone") ?? "").trim(),
+          customerEmail: String(form.get("customerEmail") ?? "").trim() || null,
+          city: String(form.get("city") ?? "").trim(),
+          category: String(form.get("category") ?? "").trim(),
+          urgency: String(form.get("urgency") ?? "normal"),
+          description: String(form.get("description") ?? "").trim(),
+          availability: String(form.get("availability") ?? "").trim() || null,
+        }),
+      });
+      const payload: unknown = await response.json();
+      if (
+        !response.ok ||
+        typeof payload !== "object" ||
+        payload === null ||
+        !("request_id" in payload) ||
+        typeof payload.request_id !== "string"
+      ) {
+        throw new Error("request_creation_failed");
+      }
+      requestId = payload.request_id;
+    } catch {
       setError("Votre demande n’a pas pu être envoyée. Vérifiez votre connexion puis réessayez.");
       setSending(false);
       return;
