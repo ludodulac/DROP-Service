@@ -4,10 +4,7 @@ export type SupabaseEnvDiagnostic = {
   missingEnv: string[];
 };
 
-type EnvLike = {
-  NEXT_PUBLIC_SUPABASE_URL?: string;
-  SUPABASE_SECRET_KEY?: string;
-};
+type EnvLike = Record<string, string | undefined>;
 
 export function getSupabaseEnvDiagnostic(
   env: EnvLike = process.env,
