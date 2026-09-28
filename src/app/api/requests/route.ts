@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPrivilegedSupabaseClient } from "@/lib/supabase-privileged-server";
+import { getSupabaseEnvDiagnostic } from "@/lib/supabase-env-diagnostic";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +71,19 @@ export async function POST(request: Request) {
 
   const supabase = createPrivilegedSupabaseClient();
   if (!supabase) {
-    return noStore({ error: "server_not_configured" }, 503);
+    const diagnostic = getSupabaseEnvDiagnostic();
+    console.error("request_server_not_configured", {
+      hasSupabaseUrl: diagnostic.hasSupabaseUrl,
+      hasSupabaseSecretKey: diagnostic.hasSupabaseSecretKey,
+      missingEnv: diagnostic.missingEnv,
+    });
+    return noStore(
+      {
+        error: "server_not_configured",
+        missingEnv: diagnostic.missingEnv,
+      },
+      503,
+    );
   }
 
   const { data: artisan, error: artisanError } = await supabase
