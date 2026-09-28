@@ -245,12 +245,18 @@ export default function AdminPage() {
     setSaving(true);
     const form = new FormData(event.currentTarget);
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
+    if (!userData.user) {
+      setSaving(false);
+      router.replace("/login");
+      return;
+    }
     const { error: insertError } = await supabase.from("drop_service_admin_prospects").insert({
       owner_id: userData.user.id,
       company_name: String(form.get("company") ?? "").trim(),
       contact_name: String(form.get("contact") ?? "").trim() || null,
       email: String(form.get("email") ?? "").trim() || null,
+      phone: String(form.get("phone") ?? "").trim() || null,
+      website: String(form.get("website") ?? "").trim() || null,
       city: String(form.get("city") ?? "").trim() || null,
       activity: String(form.get("activity") ?? "").trim() || null,
       why_fit: String(form.get("why") ?? "").trim() || null,
@@ -303,7 +309,7 @@ export default function AdminPage() {
               <h1>{activeTab === "today" ? "Aujourd'hui" : activeTab === "prospects" ? "Prospects" : activeTab === "emails" ? "Emails à valider" : activeTab === "pilots" ? "Pilotes" : "Clients"}</h1>
               <p className="muted">{activeTab === "today" ? "Je prépare le travail ; vous ne voyez ici que ce qui demande une décision ou une action." : "Tout ce qu'il faut pour avancer sans retourner dans vos notes."}</p>
             </div>
-            <button className="button" type="button" onClick={() => setCreating(true)}>Ajouter un prospect</button>
+            <button className="button" type="button" onClick={() => setCreating(true)}>Nouveau prospect</button>
           </header>
 
           {error && <p className="alert-error">{error}</p>}
@@ -370,5 +376,5 @@ function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onStatus }:
 }
 
 function CreateProspectModal({ saving, onClose, onSubmit }: { saving: boolean; onClose: () => void; onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
-  return <div className="admin-overlay" onMouseDown={onClose}><form className="admin-modal" onSubmit={onSubmit} onMouseDown={(e) => e.stopPropagation()}><div className="admin-drawer-head"><div><p className="eyebrow">Prospection</p><h2>Ajouter un prospect</h2></div><button className="text-button" type="button" onClick={onClose}>Fermer</button></div><label className="field-label">Entreprise<input className="field" name="company" required /></label><label className="field-label">Contact<input className="field" name="contact" /></label><div className="admin-form-columns"><label className="field-label">Email<input className="field" name="email" type="email" /></label><label className="field-label">Ville<input className="field" name="city" /></label></div><label className="field-label">Activité<input className="field" name="activity" placeholder="Ex. Plomberie et chauffage" /></label><label className="field-label">Pourquoi il est intéressant<textarea className="field" name="why" rows={4} /></label><button className="button" type="submit" disabled={saving}>{saving ? "Ajout…" : "Ajouter à la liste"}</button></form></div>;
+  return <div className="admin-overlay" onMouseDown={onClose}><form className="admin-modal" onSubmit={onSubmit} onMouseDown={(e) => e.stopPropagation()}><div className="admin-drawer-head"><div><p className="eyebrow">Prospection</p><h2>Nouveau prospect</h2></div><button className="text-button" type="button" onClick={onClose}>Fermer</button></div><label className="field-label">Entreprise<input className="field" name="company" required /></label><label className="field-label">Contact<input className="field" name="contact" /></label><div className="admin-form-columns"><label className="field-label">Email<input className="field" name="email" type="email" /></label><label className="field-label">Téléphone<input className="field" name="phone" type="tel" /></label></div><div className="admin-form-columns"><label className="field-label">Site web<input className="field" name="website" type="url" placeholder="https://…" /></label><label className="field-label">Ville<input className="field" name="city" /></label></div><label className="field-label">Activité<input className="field" name="activity" placeholder="Ex. Plomberie et chauffage" /></label><label className="field-label">Pourquoi il est intéressant<textarea className="field" name="why" rows={4} /></label><button className="button" type="submit" disabled={saving}>{saving ? "Ajout…" : "Ajouter à la liste"}</button></form></div>;
 }
