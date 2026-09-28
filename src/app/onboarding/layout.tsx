@@ -1,15 +1,14 @@
-import "./admin.css";
 import { redirect } from "next/navigation";
 import { resolveAuthDestination } from "@/lib/auth-role-server";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({
+export default async function OnboardingLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const destination = await resolveAuthDestination();
 
-  if (destination !== "/admin") {
+  if (destination !== "/onboarding") {
     redirect(destination);
   }
 
