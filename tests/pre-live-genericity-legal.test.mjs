@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const form = readFileSync("src/app/a/[slug]/request/RequestForm.tsx", "utf8");
+const requestRoute = readFileSync("src/app/api/requests/route.ts", "utf8");
 const detail = readFileSync("src/app/dashboard/requests/[id]/page.tsx", "utf8");
 const legal = readFileSync("src/app/mentions-legales/page.tsx", "utf8");
 const privacy = readFileSync("src/app/confidentialite/page.tsx", "utf8");
@@ -18,7 +19,8 @@ test("public request form uses trade-neutral categories and preserves the reques
   for (const field of ["category", "city", "urgency", "description", "availability", "customerName", "customerPhone", "customerEmail", "photos"]) {
     assert.match(form, new RegExp(field));
   }
-  assert.match(form, /from\("drop_service_requests"\)\.insert/);
+  assert.match(form, /fetch\("\/api\/requests"/);
+  assert.match(requestRoute, /from\("drop_service_requests"\)\.insert/);
 });
 
 test("existing request categories remain displayable without a new category enum", () => {

@@ -3,9 +3,9 @@
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
 
-type Props = { artisanId: string; companyName: string };
+type Props = { artisanId: string; artisanSlug: string; companyName: string };
 
-export default function RequestForm({ artisanId, companyName }: Props) {
+export default function RequestForm({ artisanId, artisanSlug, companyName }: Props) {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -30,22 +30,53 @@ export default function RequestForm({ artisanId, companyName }: Props) {
       return;
     }
 
-    const requestId = crypto.randomUUID();
-    const { error: requestError } = await supabase.from("drop_service_requests").insert({
-      id: requestId,
-      artisan_id: artisanId,
-      customer_name: String(form.get("customerName") ?? "").trim(),
-      phone: String(form.get("customerPhone") ?? "").trim(),
-      email: String(form.get("customerEmail") ?? "").trim() || null,
-      city: String(form.get("city") ?? "").trim(),
-      category: String(form.get("category") ?? "").trim(),
-      urgency: String(form.get("urgency") ?? "normal"),
-      description: String(form.get("description") ?? "").trim(),
-      availability: String(form.get("availability") ?? "").trim() || null,
-      status: "new",
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: artisanSlug,
+          customerName: String(form.get("customerName") ?? "").trim(),
+          customerPhone: String(form.get("customerPhone") ?? "").trim(),
+          customerEmail: String(form.get("customerEmail") ?? "").trim() || null,
+          city: String(form.get("city") ?? "").trim(),
+          category: String(form.get("category") ?? "").trim(),
+          urgency: String(form.get("urgency") ?? "normal"),
+          description: String(form.get("description") ?? "").trim(),
+          availability: String(form.get("availability") ?? "").trim() || null,
+        }),
+      });
+    } catch {
+      setError("Votre demande n’a pas pu être envoyée. Vérifiez votre connexion puis réessayez.");
+      setSending(false);
+      return;
+    }
 
-    if (requestError) {
+    if (!response.ok) {
+      setError("Votre demande n’a pas pu être envoyée. Vérifiez votre connexion puis réessayez.");
+      setSending(false);
+      return;
+    }
+
+    let requestResult: unknown;
+    try {
+      requestResult = await response.json();
+    } catch {
+      setError("Votre demande n’a pas pu être envoyée. Vérifiez votre connexion puis réessayez.");
+      setSending(false);
+      return;
+    }
+
+    const requestId =
+      typeof requestResult === "object" &&
+      requestResult !== null &&
+      "requestId" in requestResult &&
+      typeof (requestResult as { requestId?: unknown }).requestId === "string"
+        ? (requestResult as { requestId: string }).requestId
+        : null;
+
+    if (!requestId) {
       setError("Votre demande n’a pas pu être envoyée. Vérifiez votre connexion puis réessayez.");
       setSending(false);
       return;
