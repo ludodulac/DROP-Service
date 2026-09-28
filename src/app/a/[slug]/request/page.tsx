@@ -39,7 +39,7 @@ export default async function RequestPage({ params, searchParams }: { params: Pr
         </header>
 
         <section className="card" style={{ padding: 24 }}>
-          <RequestForm artisanId={artisan.id} companyName={artisan.company_name} />
+          <RequestForm artisanId={artisan.id} artisanSlug={artisan.slug} companyName={artisan.company_name} />
         </section>
 
         </div>
