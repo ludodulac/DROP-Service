@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPrivilegedSupabaseClient } from "@/lib/supabase-privileged-server";
+import { sendArtisanRequestNotification } from "@/lib/resend-server";
 
 export const dynamic = "force-dynamic";
 
@@ -119,7 +120,24 @@ export async function POST(request: Request) {
     return noStore({ error: "request_create_failed" }, 500);
   }
 
-  // Notification context intentionally remains server-side for the next mission.
-  // In particular, requestContext.artisanEmail must never be returned to the browser.
+  try {
+    await sendArtisanRequestNotification({
+      to: requestContext.artisanEmail,
+      requestId: requestContext.requestId,
+      customerName,
+      phone,
+      customerEmail: email,
+      city,
+      category,
+      urgency,
+      description,
+      availability,
+    });
+  } catch {
+    console.error("artisan_request_notification_failed", {
+      requestId: requestContext.requestId,
+    });
+  }
+
   return noStore({ requestId: requestContext.requestId }, 201);
 }
