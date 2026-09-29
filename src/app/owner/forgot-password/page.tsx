@@ -15,7 +15,7 @@ export default function OwnerForgotPasswordPage() {
     setLoading(true);
     setError("");
 
-    const redirectTo = `${window.location.origin}/owner/update-password`;
+    const redirectTo = "https://brif-artisans.vercel.app/owner/update-password";
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
     if (resetError) {

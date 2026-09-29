@@ -14,10 +14,11 @@ test("owner login exposes a dedicated forgotten-password link without artisan si
   assert.doesNotMatch(ownerLogin, /Créer mon espace artisan/);
 });
 
-test("owner recovery request uses Supabase resetPasswordForEmail and current origin", () => {
+test("owner recovery request uses the canonical BRIF recovery URL", () => {
   assert.match(forgot, /supabase\.auth\.resetPasswordForEmail\(email, \{ redirectTo \}\)/);
-  assert.match(forgot, /window\.location\.origin/);
-  assert.match(forgot, /\/owner\/update-password/);
+  assert.match(forgot, /https:\/\/brif-artisans\.vercel\.app\/owner\/update-password/);
+  assert.doesNotMatch(forgot, /window\.location\.origin/);
+  assert.doesNotMatch(forgot, /drop-service-swart/i);
 });
 
 test("owner recovery request does not reveal whether an account exists", () => {
