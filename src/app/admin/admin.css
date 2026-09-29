@@ -63,3 +63,173 @@
   .admin-drawer { padding: 22px 18px; }
   .admin-email-head { align-items: flex-start; flex-direction: column; }
 }
+
+
+/* Admin mobile containment: the page itself never becomes a horizontal scroller. */
+.admin-page {
+  max-width: 100%;
+  overflow-x: clip;
+}
+.admin-layout,
+.admin-sidebar,
+.admin-content,
+.admin-header,
+.admin-header > div,
+.admin-grid,
+.admin-focus-card,
+.admin-wide,
+.data-panel,
+.section-heading,
+.section-heading > div,
+.admin-task,
+.admin-task > div,
+.admin-drawer,
+.admin-drawer-head,
+.admin-drawer-head > div,
+.admin-drawer-section,
+.admin-next-action {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-nav {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-nav-item > span {
+  min-width: 0;
+}
+.admin-nav-item strong {
+  min-width: 0;
+  white-space: nowrap;
+}
+.admin-header h1,
+.admin-header p,
+.admin-focus-card,
+.admin-task,
+.admin-task span,
+.section-heading,
+.admin-drawer,
+.admin-drawer p,
+.admin-next-action,
+.admin-mobile-prospect-card,
+.admin-mobile-prospect-card strong,
+.admin-mobile-prospect-card span,
+.admin-contact-grid a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.admin-mobile-prospect-list {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .admin-sidebar {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .admin-nav {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-nav-item {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-content {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  .admin-grid,
+  .admin-focus-card,
+  .data-panel {
+    width: 100%;
+    max-width: 100%;
+  }
+  .section-heading {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .count-label {
+    white-space: normal;
+  }
+  .admin-task {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .admin-task .button {
+    width: 100%;
+  }
+  .admin-desktop-prospect-table {
+    display: none;
+  }
+  .admin-mobile-prospect-list {
+    display: grid;
+    width: 100%;
+  }
+  .admin-mobile-prospect-card {
+    min-width: 0;
+    width: 100%;
+    padding: 18px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    gap: 15px;
+  }
+  .admin-mobile-prospect-card:last-child {
+    border-bottom: 0;
+  }
+  .admin-mobile-prospect-head {
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .admin-mobile-prospect-head > div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .admin-mobile-prospect-head span,
+  .admin-mobile-prospect-meta {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .admin-mobile-prospect-meta {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .admin-mobile-prospect-card .compact-select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .admin-mobile-next-action {
+    min-width: 0;
+    padding-top: 2px;
+    display: grid;
+    gap: 5px;
+  }
+  .admin-mobile-next-action span {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .admin-mobile-next-action strong {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+}

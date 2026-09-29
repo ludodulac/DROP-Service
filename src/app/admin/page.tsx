@@ -264,13 +264,24 @@ export default function AdminPage() {
   }
 
   const selected = prospects.find((p) => p.id === selectedId) ?? null;
-  const counts = useMemo(() => ({
-    review: prospects.filter((p) => p.status === "to_review").length,
-    ready: prospects.filter((p) => p.status === "approved").length,
-    followup: prospects.filter((p) => ["contacted", "replied", "demo"].includes(p.status)).length,
-    pilots: prospects.filter((p) => p.status === "pilot").length,
-    clients: prospects.filter((p) => p.status === "client").length,
-  }), [prospects]);
+  const counts = useMemo(() => {
+    const review = prospects.filter((p) => p.status === "to_review").length;
+    const ready = prospects.filter((p) => p.status === "approved").length;
+    const followup = prospects.filter((p) => ["contacted", "replied", "demo"].includes(p.status)).length;
+    const emailMessages = prospects.filter(
+      (p) => ["to_review", "approved"].includes(p.status) && Boolean(p.draft_email),
+    ).length;
+
+    return {
+      review,
+      ready,
+      followup,
+      pilots: prospects.filter((p) => p.status === "pilot").length,
+      clients: prospects.filter((p) => p.status === "client").length,
+      emailMessages,
+      today: review + ready + followup + tasks.length,
+    };
+  }, [prospects, tasks.length]);
 
   const visibleProspects = prospects.filter((p) => {
     if (activeTab === "emails") return ["to_review", "approved"].includes(p.status) && Boolean(p.draft_email);
@@ -287,11 +298,11 @@ export default function AdminPage() {
         <aside className="admin-sidebar">
           <div className="brand-lockup"><span className="brand-mark">LD</span><div><strong>Administration</strong><span>Ludovic Dulac</span></div></div>
           <nav className="admin-nav" aria-label="Administration">
-            <AdminNav active={activeTab === "today"} onClick={() => setActiveTab("today")} label="Aujourd'hui" count={counts.review + counts.ready + tasks.length} />
-            <AdminNav active={activeTab === "prospects"} onClick={() => setActiveTab("prospects")} label="Prospects" count={prospects.length} />
-            <AdminNav active={activeTab === "emails"} onClick={() => setActiveTab("emails")} label="Emails à valider" count={counts.review + counts.ready} />
-            <AdminNav active={activeTab === "pilots"} onClick={() => setActiveTab("pilots")} label="Pilotes" count={counts.pilots} />
-            <AdminNav active={activeTab === "clients"} onClick={() => setActiveTab("clients")} label="Clients" count={counts.clients} />
+            <AdminNav active={activeTab === "today"} onClick={() => setActiveTab("today")} label="Aujourd'hui" badge={`${counts.today} action${counts.today > 1 ? "s" : ""}`} />
+            <AdminNav active={activeTab === "prospects"} onClick={() => setActiveTab("prospects")} label="Prospects" badge={`${prospects.length} total`} />
+            <AdminNav active={activeTab === "emails"} onClick={() => setActiveTab("emails")} label="Emails à valider" badge={`${counts.emailMessages} message${counts.emailMessages > 1 ? "s" : ""}`} />
+            <AdminNav active={activeTab === "pilots"} onClick={() => setActiveTab("pilots")} label="Pilotes" badge={String(counts.pilots)} />
+            <AdminNav active={activeTab === "clients"} onClick={() => setActiveTab("clients")} label="Clients" badge={String(counts.clients)} />
           </nav>
           <div className="admin-sidebar-footer"><Link href="/dashboard" className="text-link">Voir l'espace artisan</Link><span>Poste de pilotage privé</span></div>
         </aside>
@@ -312,8 +323,8 @@ export default function AdminPage() {
             <div className="admin-grid">
               <section className="admin-focus-card">
                 <div><span className="admin-kicker">À valider</span><strong>{counts.review}</strong></div>
-                <p>Messages préparés et choix de contact qui attendent votre feu vert.</p>
-                <button className="button" type="button" onClick={() => setActiveTab("emails")}>Valider les messages</button>
+                <p>Prospects dont le premier message reste à préparer ou à valider.</p>
+                <button className="button" type="button" onClick={() => setActiveTab("prospects")}>Voir les prospects à traiter</button>
               </section>
               <section className="admin-focus-card">
                 <div><span className="admin-kicker">Prêts à envoyer</span><strong>{counts.ready}</strong></div>
@@ -339,7 +350,36 @@ export default function AdminPage() {
             <section className="data-panel">
               <div className="section-heading"><div><h2>{activeTab === "emails" ? "Messages préparés" : activeTab === "pilots" ? "Pilotes actifs" : activeTab === "clients" ? "Clients" : "Pipeline commercial"}</h2><p className="muted">Cliquez sur une ligne pour voir le détail, valider le message ou l’ouvrir dans Gmail.</p></div><span className="count-label">{visibleProspects.length} résultat{visibleProspects.length > 1 ? "s" : ""}</span></div>
               {visibleProspects.length === 0 ? <div className="empty-state"><div className="empty-icon">✓</div><h3>Rien ici pour le moment</h3><p>Cette vue se remplira au fur et à mesure de la prospection et des pilotes.</p></div> : (
-                <div className="table-wrap"><table className="data-table admin-table"><thead><tr><th>Entreprise</th><th>Ville / activité</th><th>Statut</th><th>Prochaine action</th><th></th></tr></thead><tbody>{visibleProspects.map((prospect) => <tr key={prospect.id} onClick={() => setSelectedId(prospect.id)} style={{ cursor: "pointer" }}><td><strong>{prospect.company_name}</strong>{prospect.contact_name && prospect.contact_name !== prospect.company_name && <span className="cell-subtext">{prospect.contact_name}</span>}</td><td>{prospect.city || "—"}<span className="cell-subtext">{prospect.activity || "Activité à préciser"}</span></td><td><select className="compact-select" value={prospect.status} disabled={saving} onClick={(e) => e.stopPropagation()} onChange={(e) => void updateStatus(prospect.id, e.target.value as ProspectStatus)}>{statusOrder.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select></td><td>{prospect.next_action || nextActionForStatus(prospect.status)}</td><td><button className="text-link" type="button" onClick={(e) => { e.stopPropagation(); setSelectedId(prospect.id); }}>Ouvrir</button></td></tr>)}</tbody></table></div>
+                <>
+                  <div className="admin-mobile-prospect-list">
+                    {visibleProspects.map((prospect) => (
+                      <article className="admin-mobile-prospect-card" key={`mobile-${prospect.id}`}>
+                        <div className="admin-mobile-prospect-head">
+                          <div>
+                            <strong>{prospect.company_name}</strong>
+                            {prospect.contact_name && prospect.contact_name !== prospect.company_name && <span>{prospect.contact_name}</span>}
+                          </div>
+                          <button className="text-link" type="button" onClick={() => setSelectedId(prospect.id)}>Ouvrir</button>
+                        </div>
+                        <div className="admin-mobile-prospect-meta">
+                          <span>{prospect.city || "Ville à préciser"}</span>
+                          <span>{prospect.activity || "Activité à préciser"}</span>
+                        </div>
+                        <label className="field-label">
+                          Statut
+                          <select className="compact-select" value={prospect.status} disabled={saving} onChange={(e) => void updateStatus(prospect.id, e.target.value as ProspectStatus)}>
+                            {statusOrder.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+                          </select>
+                        </label>
+                        <div className="admin-mobile-next-action">
+                          <span>Prochaine action</span>
+                          <strong>{prospect.next_action || nextActionForStatus(prospect.status)}</strong>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="table-wrap admin-desktop-prospect-table"><table className="data-table admin-table"><thead><tr><th>Entreprise</th><th>Ville / activité</th><th>Statut</th><th>Prochaine action</th><th></th></tr></thead><tbody>{visibleProspects.map((prospect) => <tr key={prospect.id} onClick={() => setSelectedId(prospect.id)} style={{ cursor: "pointer" }}><td><strong>{prospect.company_name}</strong>{prospect.contact_name && prospect.contact_name !== prospect.company_name && <span className="cell-subtext">{prospect.contact_name}</span>}</td><td>{prospect.city || "—"}<span className="cell-subtext">{prospect.activity || "Activité à préciser"}</span></td><td><select className="compact-select" value={prospect.status} disabled={saving} onClick={(e) => e.stopPropagation()} onChange={(e) => void updateStatus(prospect.id, e.target.value as ProspectStatus)}>{statusOrder.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select></td><td>{prospect.next_action || nextActionForStatus(prospect.status)}</td><td><button className="text-link" type="button" onClick={(e) => { e.stopPropagation(); setSelectedId(prospect.id); }}>Ouvrir</button></td></tr>)}</tbody></table></div>
+                </>
               )}
             </section>
           )}
@@ -352,8 +392,8 @@ export default function AdminPage() {
   );
 }
 
-function AdminNav({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) {
-  return <button type="button" className={`admin-nav-item${active ? " admin-nav-active" : ""}`} onClick={onClick}><span>{label}</span>{count > 0 && <strong>{count}</strong>}</button>;
+function AdminNav({ active, onClick, label, badge }: { active: boolean; onClick: () => void; label: string; badge: string }) {
+  return <button type="button" className={`admin-nav-item${active ? " admin-nav-active" : ""}`} onClick={onClick}><span>{label}</span><strong>{badge}</strong></button>;
 }
 
 function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onStatus }: { prospect: Prospect; saving: boolean; copied: boolean; onCopy: () => void; onClose: () => void; onStatus: (status: ProspectStatus) => void }) {
