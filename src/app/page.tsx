@@ -1,6 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { resolveAuthDestination } from "@/lib/auth-role-server";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const destination = await resolveAuthDestination();
+
+  if (destination !== "/login") {
+    redirect(destination);
+  }
+
   return (
     <main style={{ padding: "64px 0" }}>
       <section className="card" style={{ maxWidth: 760, margin: "0 auto" }}>
