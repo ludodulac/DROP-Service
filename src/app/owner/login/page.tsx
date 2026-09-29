@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -95,6 +96,9 @@ export default function OwnerLoginPage() {
               </button>
             </span>
           </label>
+          <div style={{ marginTop: -4 }}>
+            <Link className="text-link" href="/owner/forgot-password" style={{ fontSize: 14 }}>Mot de passe oublié ?</Link>
+          </div>
 
           {error && <p className="alert-error" role="alert">{error}</p>}
           <button className="button" type="submit" disabled={loading}>
