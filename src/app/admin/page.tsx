@@ -138,6 +138,18 @@ export default function AdminPage() {
 
   useEffect(() => { void loadAdmin(); }, []);
 
+  async function signOutOwner() {
+    setError("");
+    const { error: signOutError } = await supabase.auth.signOut();
+
+    if (signOutError) {
+      setError("La déconnexion n’a pas pu être effectuée. Réessayez.");
+      return;
+    }
+
+    window.location.replace("/owner/login");
+  }
+
   async function loadAdmin() {
     setLoading(true);
     setError("");
@@ -296,7 +308,10 @@ export default function AdminPage() {
     <main className="admin-page">
       <div className="admin-layout">
         <aside className="admin-sidebar">
-          <div className="brand-lockup"><span className="brand-mark">LD</span><div><strong>Administration</strong><span>Ludovic Dulac</span></div></div>
+          <div className="admin-brand-row">
+            <div className="brand-lockup"><span className="brand-mark">LD</span><div><strong>Administration</strong><span>Ludovic Dulac</span></div></div>
+            <button className="text-button admin-owner-logout" type="button" onClick={() => void signOutOwner()}>Se déconnecter</button>
+          </div>
           <nav className="admin-nav" aria-label="Administration">
             <AdminNav active={activeTab === "today"} onClick={() => setActiveTab("today")} label="Aujourd'hui" badge={`${counts.today} action${counts.today > 1 ? "s" : ""}`} />
             <AdminNav active={activeTab === "prospects"} onClick={() => setActiveTab("prospects")} label="Prospects" badge={`${prospects.length} total`} />

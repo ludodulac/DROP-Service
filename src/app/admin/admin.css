@@ -1,6 +1,9 @@
 .admin-page { width: 100%; min-height: 100vh; background: var(--bg); }
 .admin-layout { width: min(1380px, 100%); min-height: 100vh; margin: 0 auto; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
 .admin-sidebar { position: sticky; top: 0; height: 100vh; padding: 26px 18px 20px; border-right: 1px solid var(--border); background: #fff; display: flex; flex-direction: column; gap: 28px; }
+.admin-brand-row { display: grid; gap: 12px; min-width: 0; }
+.admin-owner-logout { justify-self: start; color: #475467; }
+.admin-owner-logout:hover { color: var(--text); }
 .admin-nav { display: grid; gap: 6px; }
 .admin-nav-item { width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: #475467; display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; text-align: left; font-size: 14px; font-weight: 650; }
 .admin-nav-item:hover { background: #f7f8fa; color: var(--text); }
@@ -47,6 +50,8 @@
 @media (max-width: 960px) {
   .admin-layout { grid-template-columns: 1fr; }
   .admin-sidebar { position: static; width: 100%; height: auto; padding: 14px 18px; border-right: 0; border-bottom: 1px solid var(--border); gap: 14px; }
+  .admin-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .admin-owner-logout { flex: 0 0 auto; white-space: nowrap; }
   .admin-nav { display: flex; overflow-x: auto; padding-bottom: 2px; }
   .admin-nav-item { width: auto; flex: 0 0 auto; }
   .admin-sidebar-footer { display: none; }
