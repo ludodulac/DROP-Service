@@ -38,8 +38,14 @@ test("owner logout clears the current Supabase session before hard redirecting t
 });
 
 test("owner menu is constrained to the viewport and cannot create page overflow", () => {
-  assert.match(adminCss, /\.admin-owner-menu\s*\{[^}]*right:\s*0[^}]*width:\s*min\(280px, calc\(100vw - 36px\)\)[^}]*max-width:\s*calc\(100vw - 36px\)[^}]*overflow:\s*hidden/s);
+  assert.match(adminCss, /\.admin-owner-menu\s*\{[^}]*right:\s*0[^}]*width:\s*min\(280px, calc\(100vw - 36px\)\)[^}]*max-width:\s*calc\(100vw - 36px\)/s);
   assert.match(adminCss, /\.admin-page\s*\{[^}]*overflow-x:\s*clip/s);
+});
+
+test("mobile owner menu escapes sidebar clipping and scrolls inside the dynamic viewport", () => {
+  assert.match(adminCss, /@media \(max-width: 960px\)[\s\S]*?\.admin-sidebar\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(adminCss, /@media \(max-width: 960px\)[\s\S]*?\.admin-owner-menu\s*\{[^}]*position:\s*fixed[^}]*z-index:\s*1000[^}]*max-height:\s*calc\(100dvh - 88px - env\(safe-area-inset-top, 0px\)\)[^}]*overflow-y:\s*auto[^}]*overscroll-behavior-y:\s*contain/s);
+  assert.match(adminCss, /-webkit-overflow-scrolling:\s*touch/);
 });
 
 test("admin remains protected by the existing server role guard after logout", () => {

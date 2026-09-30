@@ -141,7 +141,21 @@
   .admin-sidebar {
     min-width: 0;
     max-width: 100%;
+    overflow: visible;
+  }
+  .admin-owner-menu {
+    position: fixed;
+    z-index: 1000;
+    top: calc(70px + env(safe-area-inset-top, 0px));
+    right: max(18px, env(safe-area-inset-right, 0px));
+    bottom: auto;
+    width: min(280px, calc(100vw - 36px));
+    max-width: calc(100vw - 36px);
+    max-height: calc(100dvh - 88px - env(safe-area-inset-top, 0px));
     overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .admin-nav {
     width: 100%;
