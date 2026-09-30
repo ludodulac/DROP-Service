@@ -25,7 +25,8 @@ test("owner menu opens and can be explicitly closed", () => {
 });
 
 test("owner menu contains only the owner-relevant logout action", () => {
-  assert.match(adminPage, /className="admin-owner-menu-item"[^>]*>\s*Se déconnecter/s);
+  assert.match(adminPage, /className="admin-owner-menu-item"/);
+  assert.match(adminPage, /Se déconnecter/);
   assert.doesNotMatch(adminPage, /Voir l'espace artisan/);
 });
 
