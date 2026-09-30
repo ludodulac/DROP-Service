@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -135,12 +134,14 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
 
   useEffect(() => { void loadAdmin(); }, []);
 
   async function signOutOwner() {
     setError("");
-    const { error: signOutError } = await supabase.auth.signOut();
+    setOwnerMenuOpen(false);
+    const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
 
     if (signOutError) {
       setError("La déconnexion n’a pas pu être effectuée. Réessayez.");
@@ -310,7 +311,38 @@ export default function AdminPage() {
         <aside className="admin-sidebar">
           <div className="admin-brand-row">
             <div className="brand-lockup"><span className="brand-mark">LD</span><div><strong>Administration</strong><span>Ludovic Dulac</span></div></div>
-            <button className="text-button admin-owner-logout" type="button" onClick={() => void signOutOwner()}>Se déconnecter</button>
+            <div className="admin-owner-menu-wrap">
+              <button
+                className="admin-owner-menu-trigger"
+                type="button"
+                aria-label={ownerMenuOpen ? "Fermer le menu propriétaire" : "Ouvrir le menu propriétaire"}
+                aria-expanded={ownerMenuOpen}
+                aria-controls="owner-menu"
+                onClick={() => setOwnerMenuOpen((open) => !open)}
+              >
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+              </button>
+              {ownerMenuOpen && (
+                <div className="admin-owner-menu" id="owner-menu" role="menu">
+                  <div className="admin-owner-menu-head">
+                    <strong>Menu propriétaire</strong>
+                    <button
+                      className="admin-owner-menu-close"
+                      type="button"
+                      aria-label="Fermer le menu propriétaire"
+                      onClick={() => setOwnerMenuOpen(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <button className="admin-owner-menu-item" type="button" role="menuitem" onClick={() => void signOutOwner()}>
+                    Se déconnecter
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <nav className="admin-nav" aria-label="Administration">
             <AdminNav active={activeTab === "today"} onClick={() => setActiveTab("today")} label="Aujourd'hui" badge={`${counts.today} action${counts.today > 1 ? "s" : ""}`} />
@@ -319,7 +351,7 @@ export default function AdminPage() {
             <AdminNav active={activeTab === "pilots"} onClick={() => setActiveTab("pilots")} label="Pilotes" badge={String(counts.pilots)} />
             <AdminNav active={activeTab === "clients"} onClick={() => setActiveTab("clients")} label="Clients" badge={String(counts.clients)} />
           </nav>
-          <div className="admin-sidebar-footer"><Link href="/dashboard" className="text-link">Voir l'espace artisan</Link><span>Poste de pilotage privé</span></div>
+          <div className="admin-sidebar-footer"><span>Poste de pilotage privé</span></div>
         </aside>
 
         <section className="admin-content">
