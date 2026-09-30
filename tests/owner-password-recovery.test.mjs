@@ -21,6 +21,12 @@ test("owner recovery request uses the canonical BRIF recovery URL", () => {
   assert.doesNotMatch(forgot, /drop-service-swart/i);
 });
 
+test("owner recovery request explains Supabase email rate limiting without changing other errors", () => {
+  assert.match(forgot, /resetError\.code === "over_email_send_rate_limit"/);
+  assert.match(forgot, /Un lien vient peut-être déjà d’être envoyé\. Patientez environ une minute avant d’en demander un nouveau\./);
+  assert.match(forgot, /La demande n’a pas pu être envoyée pour le moment\. Réessayez dans quelques instants\./);
+});
+
 test("owner recovery request does not reveal whether an account exists", () => {
   assert.match(forgot, /Si cette adresse correspond à un compte/);
   assert.doesNotMatch(forgot, /compte existe[^\n]*YES|adresse existe|utilisateur existe/i);
