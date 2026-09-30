@@ -15,11 +15,15 @@ export default function OwnerForgotPasswordPage() {
     setLoading(true);
     setError("");
 
-    const redirectTo = "https://brif-artisans.vercel.app/owner/update-password";
+    const redirectTo = new URL("/owner/update-password", window.location.origin).toString();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
     if (resetError) {
-      setError("La demande n’a pas pu être envoyée pour le moment. Réessayez dans quelques instants.");
+      const message =
+        resetError.code === "over_email_send_rate_limit"
+          ? "Un lien vient peut-être déjà d’être envoyé. Patientez environ une minute avant d’en demander un nouveau."
+          : "La demande n’a pas pu être envoyée pour le moment. Réessayez dans quelques instants.";
+      setError(message);
       setLoading(false);
       return;
     }
