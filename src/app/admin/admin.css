@@ -1,6 +1,19 @@
 .admin-page { width: 100%; min-height: 100vh; background: var(--bg); }
 .admin-layout { width: min(1380px, 100%); min-height: 100vh; margin: 0 auto; display: grid; grid-template-columns: 230px minmax(0, 1fr); }
 .admin-sidebar { position: sticky; top: 0; height: 100vh; padding: 26px 18px 20px; border-right: 1px solid var(--border); background: #fff; display: flex; flex-direction: column; gap: 28px; }
+.admin-brand-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; }
+.admin-owner-menu-wrap { position: relative; flex: 0 0 auto; }
+.admin-owner-menu-trigger { width: 44px; height: 44px; padding: 0; border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--text); display: grid; place-content: center; gap: 4px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.admin-owner-menu-trigger span { width: 20px; height: 2px; border-radius: 999px; background: currentColor; }
+.admin-owner-menu-trigger:hover { background: #f7f8fa; }
+.admin-owner-menu-trigger:focus-visible { outline: 3px solid rgba(37, 99, 235, .22); outline-offset: 2px; }
+.admin-owner-menu { position: absolute; z-index: 50; top: calc(100% + 8px); right: 0; width: min(280px, calc(100vw - 36px)); max-width: calc(100vw - 36px); padding: 8px; border: 1px solid var(--border); border-radius: 12px; background: #fff; box-shadow: 0 18px 48px rgba(16, 24, 40, .16); overflow: hidden; }
+.admin-owner-menu-head { min-width: 0; min-height: 40px; padding: 4px 4px 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #f0f2f5; }
+.admin-owner-menu-head strong { min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.admin-owner-menu-close { width: 36px; height: 36px; flex: 0 0 auto; border: 0; border-radius: 8px; background: transparent; color: #667085; cursor: pointer; font-size: 24px; line-height: 1; }
+.admin-owner-menu-close:hover { background: #f7f8fa; color: var(--text); }
+.admin-owner-menu-item { width: 100%; min-height: 44px; margin-top: 6px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: #344054; cursor: pointer; text-align: left; font: inherit; font-size: 14px; font-weight: 650; }
+.admin-owner-menu-item:hover { background: #f7f8fa; color: var(--text); }
 .admin-nav { display: grid; gap: 6px; }
 .admin-nav-item { width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: #475467; display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; text-align: left; font-size: 14px; font-weight: 650; }
 .admin-nav-item:hover { background: #f7f8fa; color: var(--text); }
@@ -47,6 +60,8 @@
 @media (max-width: 960px) {
   .admin-layout { grid-template-columns: 1fr; }
   .admin-sidebar { position: static; width: 100%; height: auto; padding: 14px 18px; border-right: 0; border-bottom: 1px solid var(--border); gap: 14px; }
+  .admin-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .admin-owner-menu { width: min(280px, calc(100vw - 36px)); max-width: calc(100vw - 36px); }
   .admin-nav { display: flex; overflow-x: auto; padding-bottom: 2px; }
   .admin-nav-item { width: auto; flex: 0 0 auto; }
   .admin-sidebar-footer { display: none; }
@@ -62,4 +77,188 @@
   .admin-form-columns { grid-template-columns: 1fr; }
   .admin-drawer { padding: 22px 18px; }
   .admin-email-head { align-items: flex-start; flex-direction: column; }
+}
+
+
+/* Admin mobile containment: the page itself never becomes a horizontal scroller. */
+.admin-page {
+  max-width: 100%;
+  overflow-x: clip;
+}
+.admin-layout,
+.admin-sidebar,
+.admin-content,
+.admin-header,
+.admin-header > div,
+.admin-grid,
+.admin-focus-card,
+.admin-wide,
+.data-panel,
+.section-heading,
+.section-heading > div,
+.admin-task,
+.admin-task > div,
+.admin-drawer,
+.admin-drawer-head,
+.admin-drawer-head > div,
+.admin-drawer-section,
+.admin-next-action {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-nav {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-nav-item > span {
+  min-width: 0;
+}
+.admin-nav-item strong {
+  min-width: 0;
+  white-space: nowrap;
+}
+.admin-header h1,
+.admin-header p,
+.admin-focus-card,
+.admin-task,
+.admin-task span,
+.section-heading,
+.admin-drawer,
+.admin-drawer p,
+.admin-next-action,
+.admin-mobile-prospect-card,
+.admin-mobile-prospect-card strong,
+.admin-mobile-prospect-card span,
+.admin-contact-grid a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.admin-mobile-prospect-list {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .admin-sidebar {
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+  }
+  .admin-owner-menu {
+    position: fixed;
+    z-index: 1000;
+    top: calc(70px + env(safe-area-inset-top, 0px));
+    right: max(18px, env(safe-area-inset-right, 0px));
+    bottom: auto;
+    width: min(280px, calc(100vw - 36px));
+    max-width: calc(100vw - 36px);
+    max-height: calc(100dvh - 88px - env(safe-area-inset-top, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-nav {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-nav-item {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-content {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  .admin-grid,
+  .admin-focus-card,
+  .data-panel {
+    width: 100%;
+    max-width: 100%;
+  }
+  .section-heading {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .count-label {
+    white-space: normal;
+  }
+  .admin-task {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .admin-task .button {
+    width: 100%;
+  }
+  .admin-desktop-prospect-table {
+    display: none;
+  }
+  .admin-mobile-prospect-list {
+    display: grid;
+    width: 100%;
+  }
+  .admin-mobile-prospect-card {
+    min-width: 0;
+    width: 100%;
+    padding: 18px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    gap: 15px;
+  }
+  .admin-mobile-prospect-card:last-child {
+    border-bottom: 0;
+  }
+  .admin-mobile-prospect-head {
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .admin-mobile-prospect-head > div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .admin-mobile-prospect-head span,
+  .admin-mobile-prospect-meta {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .admin-mobile-prospect-meta {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+  .admin-mobile-prospect-card .compact-select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .admin-mobile-next-action {
+    min-width: 0;
+    padding-top: 2px;
+    display: grid;
+    gap: 5px;
+  }
+  .admin-mobile-next-action span {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .admin-mobile-next-action strong {
+    font-size: 14px;
+    line-height: 1.45;
+  }
 }

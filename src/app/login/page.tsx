@@ -41,7 +41,32 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/dashboard");
+    try {
+      const routingResponse = await fetch("/api/auth/destination", { cache: "no-store" });
+      const routingPayload: unknown = await routingResponse.json();
+      const destination =
+        typeof routingPayload === "object" &&
+        routingPayload !== null &&
+        "destination" in routingPayload &&
+        typeof (routingPayload as { destination?: unknown }).destination === "string"
+          ? (routingPayload as { destination: string }).destination
+          : null;
+
+      if (
+        !routingResponse.ok ||
+        !destination ||
+        !["/admin", "/dashboard", "/onboarding"].includes(destination)
+      ) {
+        setError("Connexion réussie, mais votre espace n’a pas pu être déterminé.");
+        setLoading(false);
+        return;
+      }
+
+      router.replace(destination);
+    } catch {
+      setError("Connexion réussie, mais votre espace n’a pas pu être déterminé.");
+      setLoading(false);
+    }
   }
 
   return (
