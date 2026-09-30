@@ -14,11 +14,29 @@ test("owner login exposes a dedicated forgotten-password link without artisan si
   assert.doesNotMatch(ownerLogin, /Créer mon espace artisan/);
 });
 
-test("owner recovery request uses the canonical BRIF recovery URL", () => {
+test("owner recovery request derives redirectTo from the current browser origin", () => {
+  assert.match(forgot, /const redirectTo = new URL\("\/owner\/update-password", window\.location\.origin\)\.toString\(\);/);
   assert.match(forgot, /supabase\.auth\.resetPasswordForEmail\(email, \{ redirectTo \}\)/);
-  assert.match(forgot, /https:\/\/brif-artisans\.vercel\.app\/owner\/update-password/);
-  assert.doesNotMatch(forgot, /window\.location\.origin/);
+  assert.doesNotMatch(forgot, /https:\/\/[^"']*vercel\.app\/owner\/update-password/);
   assert.doesNotMatch(forgot, /drop-service-swart/i);
+});
+
+test("owner recovery redirect stays on the production origin", () => {
+  const redirectTo = new URL("/owner/update-password", "https://brif-artisans.vercel.app").toString();
+  assert.equal(redirectTo, "https://brif-artisans.vercel.app/owner/update-password");
+});
+
+test("owner recovery redirect stays on an arbitrary preview origin", () => {
+  const previewOrigin = "https://brif-artisans-example-preview-ludo24.vercel.app";
+  const redirectTo = new URL("/owner/update-password", previewOrigin).toString();
+  assert.equal(redirectTo, `${previewOrigin}/owner/update-password`);
+  assert.doesNotMatch(forgot, /brif-artisans-example-preview-ludo24/);
+});
+
+test("owner normal login remains password-based and role-routed", () => {
+  assert.match(ownerLogin, /supabase\.auth\.signInWithPassword\(\{ email, password \}\)/);
+  assert.match(ownerLogin, /fetch\("\/api\/auth\/destination", \{ cache: "no-store" \}\)/);
+  assert.match(ownerLogin, /router\.replace\(destination\)/);
 });
 
 test("owner recovery request explains Supabase email rate limiting without changing other errors", () => {
