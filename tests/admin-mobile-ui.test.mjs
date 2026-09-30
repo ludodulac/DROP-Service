@@ -10,9 +10,10 @@ test("admin page is explicitly contained to the mobile viewport", () => {
   assert.match(css, /\.admin-content\s*\{[^}]*width:\s*100%[^}]*max-width:\s*100%[^}]*overflow-x:\s*clip/s);
 });
 
-test("only the admin navigation remains a horizontal mobile scroller", () => {
+test("admin navigation remains the horizontal mobile scroller without clipping owner overlays", () => {
   assert.match(css, /\.admin-nav\s*\{[^}]*overflow-x:\s*auto/s);
-  assert.match(css, /\.admin-sidebar\s*\{[^}]*overflow-x:\s*hidden/s);
+  assert.match(css, /@media \(max-width: 960px\)[\s\S]*?\.admin-sidebar\s*\{[^}]*overflow:\s*visible/s);
+  assert.doesNotMatch(css, /\.admin-owner-menu\s*\{[^}]*overflow-x:\s*auto/s);
 });
 
 test("wide desktop prospect table is replaced by mobile prospect cards", () => {
