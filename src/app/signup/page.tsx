@@ -66,7 +66,11 @@ export default function SignupPage() {
     setError("");
     setMessage("");
 
-    // A signup is a deliberate switch into an artisan identity. Clear any\n    // existing owner/artisan session first so the confirmation cannot inherit it.\n    await supabase.auth.signOut();\n\n    const { data, error: signUpError } = await supabase.auth.signUp({
+    // A signup is a deliberate switch into an artisan identity.
+    // Clear the previous owner/artisan session so confirmation cannot inherit it.
+    await supabase.auth.signOut();
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: SIGNUP_CONFIRM_URL },
