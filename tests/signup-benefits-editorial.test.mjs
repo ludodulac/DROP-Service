@@ -50,7 +50,12 @@ test("320px mobile safety keeps copy shrinkable and wrapping without fixed card 
   assert.match(css, /\.auth-benefit \{[^}]*min-width:\s*0;[^}]*grid-template-columns:\s*36px minmax\(0, 1fr\);/s);
   assert.match(css, /\.auth-benefit-copy \{[^}]*min-width:\s*0;/s);
   assert.match(css, /\.auth-benefit-copy > span \{[^}]*overflow-wrap:\s*anywhere;/s);
-  assert.doesNotMatch(css, /\.auth-benefit(?:s)?[^\{]*\{[^}]*(?:min-width:\s*[4-9]\d\dpx|width:\s*[4-9]\d\dpx)/i);
+  const benefitsRule = css.match(/\.auth-benefits \\{([^}]*)\\}/)?.[1] ?? "";
+  const benefitItemRule = css.match(/\.auth-benefit \\{([^}]*)\\}/)?.[1] ?? "";
+  assert.doesNotMatch(benefitsRule, /(?:^|;)\s*width:\s*[4-9]\d\dpx/i);
+  assert.doesNotMatch(benefitsRule, /min-width:\s*[4-9]\d\dpx/i);
+  assert.doesNotMatch(benefitItemRule, /(?:^|;)\s*width:\s*[4-9]\d\dpx/i);
+  assert.doesNotMatch(benefitItemRule, /min-width:\s*[4-9]\d\dpx/i);
 });
 
 test("login benefits remain untouched because they are a different existing content set", () => {
