@@ -25,12 +25,14 @@ test("reload path already reads persisted draft columns", () => {
   assert.ok(selections.length >= 2);
 });
 
-test("existing review copy and Gmail flow remains attached to the saved draft", () => {
+test("saved draft can open a prefilled email without sending automatically", () => {
   assert.match(admin, /function gmailComposeUrl\(prospect: Prospect\)/);
+  assert.match(admin, /subject: prospect\.draft_subject \?\? ""/);
   assert.match(admin, /body: prospect\.draft_email/);
+  assert.match(admin, /mailto:\$\{encodeURIComponent\(prospect\.email\)\}/);
   assert.match(admin, /Copier le message/);
   assert.match(admin, /Valider ce message/);
-  assert.match(admin, /Ouvrir dans Gmail/);
+  assert.match(admin, /Ouvrir l’email préparé/);
   assert.match(admin, /Marquer comme envoyé/);
   assert.match(admin, /prospect\.draft_email && <div className="admin-drawer-section">/);
 });
