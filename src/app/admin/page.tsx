@@ -253,6 +253,43 @@ export default function AdminPage() {
     window.setTimeout(() => setCopiedId((current) => current === prospect.id ? null : current), 1800);
   }
 
+  async function saveDraft(id: string, subject: string, message: string) {
+    const draftSubject = subject.trim();
+    const draftEmail = message.trim();
+
+    if (!draftSubject || !draftEmail) {
+      setError("Renseignez l’objet et le message avant d’enregistrer.");
+      return false;
+    }
+
+    setSaving(true);
+    setError("");
+    const { data: updated, error: updateError } = await supabase
+      .from("drop_service_admin_prospects")
+      .update({
+        draft_subject: draftSubject,
+        draft_email: draftEmail,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("draft_subject, draft_email")
+      .single();
+
+    if (updateError || !updated) {
+      setError("Le message n’a pas pu être enregistré.");
+      setSaving(false);
+      return false;
+    }
+
+    setProspects((current) => current.map((prospect) =>
+      prospect.id === id
+        ? { ...prospect, draft_subject: updated.draft_subject, draft_email: updated.draft_email }
+        : prospect
+    ));
+    setSaving(false);
+    return true;
+  }
+
   async function createProspect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -433,7 +470,7 @@ export default function AdminPage() {
         </section>
       </div>
 
-      {selected && <ProspectDrawer prospect={selected} saving={saving} copied={copiedId === selected.id} onCopy={() => void copyDraft(selected)} onClose={() => setSelectedId(null)} onStatus={(status) => void updateStatus(selected.id, status)} />}
+      {selected && <ProspectDrawer prospect={selected} saving={saving} copied={copiedId === selected.id} onCopy={() => void copyDraft(selected)} onClose={() => setSelectedId(null)} onSaveDraft={(subject, message) => saveDraft(selected.id, subject, message)} onStatus={(status) => void updateStatus(selected.id, status)} />}
       {creating && <CreateProspectModal saving={saving} onClose={() => setCreating(false)} onSubmit={createProspect} />}
     </main>
   );
@@ -443,13 +480,38 @@ function AdminNav({ active, onClick, label, badge }: { active: boolean; onClick:
   return <button type="button" className={`admin-nav-item${active ? " admin-nav-active" : ""}`} onClick={onClick}><span>{label}</span><strong>{badge}</strong></button>;
 }
 
-function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onStatus }: { prospect: Prospect; saving: boolean; copied: boolean; onCopy: () => void; onClose: () => void; onStatus: (status: ProspectStatus) => void }) {
+function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onSaveDraft, onStatus }: { prospect: Prospect; saving: boolean; copied: boolean; onCopy: () => void; onClose: () => void; onSaveDraft: (subject: string, message: string) => Promise<boolean>; onStatus: (status: ProspectStatus) => void }) {
+  const [draftSubject, setDraftSubject] = useState(prospect.draft_subject ?? "");
+  const [draftEmail, setDraftEmail] = useState(prospect.draft_email ?? "");
+  const [draftSaved, setDraftSaved] = useState(false);
   const gmailUrl = gmailComposeUrl(prospect);
+
+  useEffect(() => {
+    setDraftSubject(prospect.draft_subject ?? "");
+    setDraftEmail(prospect.draft_email ?? "");
+    setDraftSaved(false);
+  }, [prospect.id]);
+
+  async function submitDraft(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setDraftSaved(false);
+    if (await onSaveDraft(draftSubject, draftEmail)) setDraftSaved(true);
+  }
+
   return <div className="admin-overlay" onMouseDown={onClose}><aside className="admin-drawer" onMouseDown={(e) => e.stopPropagation()}>
     <div className="admin-drawer-head"><div><p className="eyebrow">Prospect</p><h2>{prospect.company_name}</h2><p className="muted">{prospect.city || "Ville à préciser"} · {prospect.activity || "Activité à préciser"}</p></div><button className="text-button" type="button" onClick={onClose}>Fermer</button></div>
     <div className="admin-drawer-section"><label className="field-label">Statut<select className="field" value={prospect.status} disabled={saving} onChange={(e) => onStatus(e.target.value as ProspectStatus)}>{statusOrder.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select></label></div>
     {prospect.why_fit && <div className="admin-drawer-section"><h3>Pourquoi ce prospect</h3><p>{prospect.why_fit}</p></div>}
     <div className="admin-drawer-section"><h3>Coordonnées</h3><div className="admin-contact-grid">{prospect.email && <a className="text-link" href={`mailto:${prospect.email}`}>{prospect.email}</a>}{prospect.phone && <a className="text-link" href={`tel:${prospect.phone}`}>{prospect.phone}</a>}{prospect.website && <a className="text-link" href={prospect.website} target="_blank" rel="noreferrer">Voir le site / contact</a>}</div>{!prospect.email && <p className="field-help">Aucun email public fiable n’a été retenu. Le message peut être copié dans le formulaire du site ou utilisé comme trame d’appel.</p>}</div>
+    <div className="admin-drawer-section">
+      <div className="admin-email-head"><h3>Préparer le message</h3><span className={`badge ${prospect.draft_email ? "badge-warning" : ""}`}>{prospect.draft_email ? "Modifiable" : "À préparer"}</span></div>
+      <form className="form-grid" onSubmit={(event) => void submitDraft(event)}>
+        <label className="field-label">Objet du message<input className="field" required value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} /></label>
+        <label className="field-label">Corps du message<textarea className="field" required rows={10} value={draftEmail} onChange={(event) => setDraftEmail(event.target.value)} /></label>
+        <button className="button" type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer le message"}</button>
+        {draftSaved && <p className="alert-success" role="status">Message enregistré.</p>}
+      </form>
+    </div>
     {prospect.draft_email && <div className="admin-drawer-section"><div className="admin-email-head"><h3>Message préparé</h3><span className={`badge ${prospect.status === "approved" ? "badge-success" : "badge-warning"}`}>{prospect.status === "approved" ? "Validé" : "À valider avant envoi"}</span></div>{prospect.draft_subject && <p><strong>Objet :</strong> {prospect.draft_subject}</p>}<pre className="admin-email-preview">{prospect.draft_email}</pre><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button className="button button-secondary" type="button" onClick={onCopy}>{copied ? "Message copié ✓" : "Copier le message"}</button>{prospect.status === "to_review" && <button className="button" type="button" disabled={saving} onClick={() => onStatus("approved")}>Valider ce message</button>}{prospect.status === "approved" && gmailUrl && <a className="button" href={gmailUrl} target="_blank" rel="noreferrer">Ouvrir dans Gmail</a>}{prospect.status === "approved" && <button className="button button-secondary" type="button" disabled={saving} onClick={() => onStatus("contacted")}>Marquer comme envoyé</button>}</div><p className="field-help">Rien n’est envoyé automatiquement. Vous gardez le contrôle du message final et de l’envoi.</p></div>}
     {prospect.notes && <div className="admin-drawer-section"><h3>Note interne</h3><p className="muted">{prospect.notes}</p></div>}
     {prospect.next_action && <div className="admin-next-action"><span>Prochaine action</span><strong>{prospect.next_action}</strong>{prospect.next_action_at && <small>Prévue le {new Date(prospect.next_action_at).toLocaleDateString("fr-FR")}</small>}</div>}
