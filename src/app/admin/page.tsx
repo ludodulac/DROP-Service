@@ -286,8 +286,8 @@ export default function AdminPage() {
       why_fit: String(form.get("why") ?? "").trim() || null,
       status: "to_review",
       priority: "normal",
-      draft_subject: `Une façon simple de recevoir des demandes clients plus claires`,
-      draft_email: `Bonjour ${String(form.get("contact") ?? "").trim() || String(form.get("company") ?? "").trim()},\n\nJe me permets de vous contacter car j’ai créé BRIF, un outil destiné aux artisans pour recevoir des demandes clients plus claires et éviter une partie des allers-retours.\n\nLe principe est simple : vos clients décrivent leur besoin, peuvent ajouter des photos et vous recevez les informations utiles avant de les rappeler.\n\nJe peux vous montrer simplement comment cela fonctionnerait pour votre activité.\n\nBien cordialement,\nLudovic Dulac`,
+      draft_subject: `Je développe à Brest un outil pour les artisans...`,
+      draft_email: `Bonjour ${(String(form.get("contact") ?? "").trim().split(/\\s+/)[0] || String(form.get("company") ?? "").trim())},\n\nJe m’appelle Ludovic Dulac, je suis à Brest et je développe actuellement BRIF, un outil destiné aux artisans.\n\nLe principe : aider à recevoir des demandes clients plus claires, avec les bonnes informations et des photos, puis les retrouver facilement au même endroit.\n\nL’outil est encore en phase d’essai et je cherche justement quelques artisans pour me dire si cela serait réellement utile dans leur quotidien.\n\nSi vous êtes curieux, je peux vous montrer très simplement comment cela fonctionne.\n\nBien cordialement,\n\nLudovic Dulac`,
       next_action: "Préparer et valider le premier message",
     });
     if (insertError) setError("Le prospect n'a pas pu être ajouté.");
