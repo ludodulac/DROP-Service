@@ -16,8 +16,7 @@ test("confirmation callback exchanges the PKCE auth code server-side before norm
   assert.match(confirmRoute, /searchParams\.get\("code"\)/);
   assert.match(confirmRoute, /createServerSupabaseClient\(\)/);
   assert.match(confirmRoute, /supabase\.auth\.exchangeCodeForSession\(code\)/);
-  assert.match(confirmRoute, /new URL\("\/login", request\.url\)/);
-  assert.match(loginLayout, /resolveAuthDestination\(\)/);
+  assert.match(confirmRoute, /new URL\("\/login", request\.url\)/);\n  assert.match(confirmRoute, /supabase\.auth\.signOut\(\)/);\n  assert.match(confirmRoute, /new URL\("\/onboarding", request\.url\)/);\n  assert.match(loginLayout, /resolveAuthDestination\(\)/);
   assert.match(loginLayout, /destination !== "\/login"/);
   assert.match(loginLayout, /redirect\(destination\)/);
 });
@@ -44,3 +43,4 @@ test("successful pending confirmation prevents a second immediate submit from re
   assert.match(signup, /disabled=\{loading \|\| confirmationRequested\}/);
   assert.match(signup, /confirmationRequested \? "Email de confirmation demandé"/);
 });
+\n\ntest("artisan signup clears any existing browser identity before starting confirmation", () => {\n  const signOutIndex = signup.indexOf("supabase.auth.signOut()");\n  const signUpIndex = signup.indexOf("supabase.auth.signUp({");\n  assert.ok(signOutIndex >= 0 && signUpIndex >= 0 && signOutIndex < signUpIndex);\n});\n\ntest("failed confirmation exchange cannot fall back into a stale owner session", () => {\n  assert.match(confirmRoute, /if \(error\) \{[\\s\\S]*?supabase\.auth\.signOut\(\)[\\s\\S]*?confirmed[\\s\\S]*?redirect\(loginUrl\)/);\n});\n
