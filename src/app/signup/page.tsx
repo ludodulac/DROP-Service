@@ -21,6 +21,33 @@ function EyeIcon({ visible }: { visible: boolean }) {
   );
 }
 
+function BenefitIcon({ kind }: { kind: "quick" | "simple" | "mobile" }) {
+  if (kind === "quick") {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v4l2.5 1.5" />
+      </svg>
+    );
+  }
+
+  if (kind === "simple") {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m7 12 3 3 7-7" />
+        <circle cx="12" cy="12" r="8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="8" y="4" width="8" height="16" rx="2" />
+      <path d="M11 17h2" />
+    </svg>
+  );
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -60,11 +87,29 @@ export default function SignupPage() {
           <p className="eyebrow">Espace artisan</p>
           <h1 style={{ marginBottom: 14 }}>Mettez vos demandes clients au même endroit.</h1>
           <p className="muted" style={{ maxWidth: 520, margin: 0 }}>Créez votre espace, personnalisez votre page de demande et commencez à recevoir des informations plus complètes avant de rappeler vos clients.</p>
-          <div className="auth-proof">
-            <span>Installation rapide</span>
-            <span>Sans jargon technique</span>
-            <span>Pensé pour le terrain</span>
-          </div>
+          <ul className="auth-benefits" aria-label="Avantages de BRIF">
+            <li className="auth-benefit">
+              <span className="auth-benefit-icon"><BenefitIcon kind="quick" /></span>
+              <span className="auth-benefit-copy">
+                <strong>Prêt en quelques minutes</strong>
+                <span>Créez votre espace sans configuration compliquée.</span>
+              </span>
+            </li>
+            <li className="auth-benefit">
+              <span className="auth-benefit-icon"><BenefitIcon kind="simple" /></span>
+              <span className="auth-benefit-copy">
+                <strong>Simple, sans jargon</strong>
+                <span>Tout est conçu pour être compris immédiatement.</span>
+              </span>
+            </li>
+            <li className="auth-benefit">
+              <span className="auth-benefit-icon"><BenefitIcon kind="mobile" /></span>
+              <span className="auth-benefit-copy">
+                <strong>Pensé pour le terrain</strong>
+                <span>Une utilisation simple, même depuis votre téléphone.</span>
+              </span>
+            </li>
+          </ul>
         </section>
 
         <section className="card auth-card">

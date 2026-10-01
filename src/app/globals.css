@@ -84,6 +84,14 @@ textarea.field { min-height: 120px; resize: vertical; line-height: 1.5; }
 .auth-card { width: 100%; max-width: 480px; justify-self: end; padding: 28px; box-shadow: var(--shadow-md); }
 .auth-proof { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
 .auth-proof span { display: inline-flex; min-height: 32px; align-items: center; padding: 0 11px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: #475467; font-size: 13px; font-weight: 600; box-shadow: var(--shadow-sm); }
+.auth-benefits { width: 100%; max-width: 540px; display: grid; gap: 0; margin: 6px 0 0; padding: 0; list-style: none; }
+.auth-benefit { min-width: 0; display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; padding: 15px 0; }
+.auth-benefit + .auth-benefit { border-top: 1px solid #e4e7ec; }
+.auth-benefit-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #eff6ff; color: #1d4ed8; }
+.auth-benefit-icon svg { width: 18px; height: 18px; }
+.auth-benefit-copy { min-width: 0; display: grid; gap: 3px; }
+.auth-benefit-copy strong { color: #182230; font-size: 15px; line-height: 1.35; font-weight: 700; }
+.auth-benefit-copy > span { color: #475467; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 
 .onboarding-shell { display: grid; grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr); gap: 56px; align-items: start; }
 .setup-steps { display: grid; gap: 10px; margin-top: 28px; max-width: 520px; }
