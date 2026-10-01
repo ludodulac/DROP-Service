@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPublicServerSupabaseClient } from "@/lib/supabase-public-server";
-import { createPrivilegedSupabaseClient } from "@/lib/supabase-privileged-server";
+import { resolveArtisanAuthEmail } from "@/lib/artisan-notification-email-server";
 import { sendArtisanRequestNotification } from "@/lib/resend-server";
 
 export const dynamic = "force-dynamic";
@@ -70,8 +70,6 @@ export async function POST(request: Request) {
     return noStore({ error: "invalid_request" }, 400);
   }
 
-  // Public request creation deliberately runs with the publishable key.
-  // Existing RLS limits anon inserts to active artisans and status='new'.
   const supabase = createPublicServerSupabaseClient();
 
   const { data: artisan, error: artisanError } = await supabase
@@ -123,26 +121,14 @@ export async function POST(request: Request) {
     return noStore({ error: "request_create_failed" }, 500);
   }
 
-  // Notification is best-effort after durable request creation.
-  // Privileged access is used only to read the private artisan email.
   try {
-    const privilegedSupabase = createPrivilegedSupabaseClient();
-    if (!privilegedSupabase) {
-      throw new Error("privileged_supabase_not_configured");
-    }
-
-    const { data: notificationArtisan, error: notificationArtisanError } = await privilegedSupabase
-      .from("drop_service_artisans")
-      .select("email")
-      .eq("id", requestContext.artisanId)
-      .single();
-
-    if (notificationArtisanError) {
-      throw new Error("artisan_notification_email_lookup_failed");
-    }
+    const artisanAuthEmail = await resolveArtisanAuthEmail(
+      request.headers.get("x-vercel-oidc-token"),
+      requestContext.artisanId,
+    );
 
     await sendArtisanRequestNotification({
-      to: notificationArtisan.email,
+      to: artisanAuthEmail,
       requestId: requestContext.requestId,
       customerName,
       phone,
@@ -152,6 +138,10 @@ export async function POST(request: Request) {
       urgency,
       description,
       availability,
+    });
+
+    console.info("artisan_request_notification_sent", {
+      requestId: requestContext.requestId,
     });
   } catch (notificationError) {
     console.error("artisan_request_notification_failed", {
