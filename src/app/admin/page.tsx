@@ -69,13 +69,10 @@ const initialProspects = [
 function gmailComposeUrl(prospect: Prospect) {
   if (!prospect.email || !prospect.draft_email) return null;
   const params = new URLSearchParams({
-    view: "cm",
-    fs: "1",
-    to: prospect.email,
-    su: prospect.draft_subject ?? "",
+    subject: prospect.draft_subject ?? "",
     body: prospect.draft_email,
   });
-  return `https://mail.google.com/mail/?${params.toString()}`;
+  return `mailto:${encodeURIComponent(prospect.email)}?${params.toString()}`;
 }
 
 function nextActionForStatus(status: ProspectStatus) {
@@ -262,6 +259,7 @@ export default function AdminPage() {
     if (!window.confirm("Supprimer définitivement ce prospect ?")) return;
     setSaving(true);
     setError("");
+    await supabase.from("drop_service_admin_tasks").delete().eq("prospect_id", id);
     const { error: deleteError } = await supabase.from("drop_service_admin_prospects").delete().eq("id", id);
     if (deleteError) setError("Le prospect n’a pas pu être supprimé.");
     else {
@@ -466,7 +464,7 @@ function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onSaveDraft
         {draftSaved && <p className="alert-success" role="status">Message enregistré.</p>}
       </form>
     </div>
-    {prospect.draft_email && <div className="admin-drawer-section"><div className="admin-email-head"><h3>Message préparé</h3><span className={`badge ${prospect.status === "approved" ? "badge-success" : "badge-warning"}`}>{prospect.status === "approved" ? "Validé" : "À valider avant envoi"}</span></div>{prospect.draft_subject && <p><strong>Objet :</strong> {prospect.draft_subject}</p>}<pre className="admin-email-preview">{prospect.draft_email}</pre><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button className="button button-secondary" type="button" onClick={onCopy}>{copied ? "Message copié ✓" : "Copier le message"}</button>{prospect.status === "to_review" && <button className="button" type="button" disabled={saving} onClick={() => onStatus("approved")}>Valider ce message</button>}{prospect.status === "approved" && gmailUrl && <a className="button" href={gmailUrl} target="_blank" rel="noreferrer">Ouvrir dans Gmail</a>}{prospect.status === "approved" && <button className="button button-secondary" type="button" disabled={saving} onClick={() => onStatus("contacted")}>Marquer comme envoyé</button>}</div><p className="field-help">Rien n’est envoyé automatiquement. Vous gardez le contrôle du message final et de l’envoi.</p></div>}
+    {prospect.draft_email && <div className="admin-drawer-section"><div className="admin-email-head"><h3>Message préparé</h3><span className={`badge ${prospect.status === "approved" ? "badge-success" : "badge-warning"}`}>{prospect.status === "approved" ? "Validé" : "À valider avant envoi"}</span></div>{prospect.draft_subject && <p><strong>Objet :</strong> {prospect.draft_subject}</p>}<pre className="admin-email-preview">{prospect.draft_email}</pre><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button className="button button-secondary" type="button" onClick={onCopy}>{copied ? "Message copié ✓" : "Copier le message"}</button>{prospect.status === "to_review" && <button className="button" type="button" disabled={saving} onClick={() => onStatus("approved")}>Valider ce message</button>}{prospect.status === "approved" && gmailUrl && <a className="button" href={gmailUrl} target="_blank" rel="noreferrer">Ouvrir l’email préparé</a>}{prospect.status === "approved" && <button className="button button-secondary" type="button" disabled={saving} onClick={() => onStatus("contacted")}>Marquer comme envoyé</button>}</div><p className="field-help">Rien n’est envoyé automatiquement. Vous gardez le contrôle du message final et de l’envoi.</p></div>}
     {prospect.notes && <div className="admin-drawer-section"><h3>Note interne</h3><p className="muted">{prospect.notes}</p></div>}
     {prospect.next_action && <div className="admin-next-action"><span>Prochaine action</span><strong>{prospect.next_action}</strong>{prospect.next_action_at && <small>Prévue le {new Date(prospect.next_action_at).toLocaleDateString("fr-FR")}</small>}</div>}
     <div className="admin-drawer-section"><button className="button admin-delete-button" type="button" disabled={saving} onClick={onDelete}>Supprimer le prospect</button></div>
