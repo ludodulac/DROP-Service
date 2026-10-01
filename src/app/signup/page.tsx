@@ -75,7 +75,7 @@ export default function SignupPage() {
       return;
     }
 
-    setMessage("Compte créé. Vérifiez votre boîte email pour confirmer votre inscription, puis revenez vous connecter.");
+    setMessage("Si cette adresse peut être utilisée pour une nouvelle inscription, vous recevrez un email de confirmation. Vérifiez votre boîte de réception et vos courriers indésirables. Si vous avez déjà un compte, vous pouvez vous connecter.");
     setLoading(false);
   }
 
