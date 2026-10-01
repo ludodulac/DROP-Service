@@ -5,6 +5,8 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+const SIGNUP_CONFIRM_URL = "https://brif-artisans.vercel.app/auth/confirm";
+
 function EyeIcon({ visible }: { visible: boolean }) {
   return visible ? (
     <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -54,6 +56,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [confirmationRequested, setConfirmationRequested] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -63,9 +66,17 @@ export default function SignupPage() {
     setError("");
     setMessage("");
 
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: SIGNUP_CONFIRM_URL },
+    });
     if (signUpError) {
-      setError("Impossible de créer le compte pour le moment. Vérifiez vos informations puis réessayez.");
+      if (signUpError.code === "over_email_send_rate_limit") {
+        setError("Une demande vient déjà d’être effectuée. Attendez un moment avant de recommencer.");
+      } else {
+        setError("Impossible de créer le compte pour le moment. Vérifiez vos informations puis réessayez.");
+      }
       setLoading(false);
       return;
     }
@@ -75,6 +86,7 @@ export default function SignupPage() {
       return;
     }
 
+    setConfirmationRequested(true);
     setMessage("Si cette adresse peut être utilisée pour une nouvelle inscription, vous recevrez un email de confirmation. Vérifiez votre boîte de réception et vos courriers indésirables. Si vous avez déjà un compte, vous pouvez vous connecter.");
     setLoading(false);
   }
@@ -119,11 +131,11 @@ export default function SignupPage() {
           </div>
           <form onSubmit={handleSubmit} className="form-grid">
             <label className="field-label">Adresse email
-              <input className="field" required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@entreprise.fr" />
+              <input className="field" required disabled={confirmationRequested} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@entreprise.fr" />
             </label>
             <label className="field-label">Mot de passe
               <span style={{ position: "relative", display: "block" }}>
-                <input className="field" style={{ paddingRight: 48 }} required minLength={8} type={showPassword ? "text" : "password"} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <input className="field" style={{ paddingRight: 48 }} required disabled={confirmationRequested} minLength={8} type={showPassword ? "text" : "password"} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 <button
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
@@ -138,7 +150,7 @@ export default function SignupPage() {
             </label>
             {error && <p className="alert-error" role="alert">{error}</p>}
             {message && <div className="alert-success" role="status">{message}</div>}
-            <button className="button" type="submit" disabled={loading}>{loading ? "Création de l'espace…" : "Créer mon espace artisan"}</button>
+            <button className="button" type="submit" disabled={loading || confirmationRequested}>{confirmationRequested ? "Email de confirmation demandé" : loading ? "Création de l'espace…" : "Créer mon espace artisan"}</button>
           </form>
           <p className="muted" style={{ marginBottom: 0, marginTop: 18, fontSize: 14 }}>Déjà inscrit ? <Link className="text-link" href="/login">Me connecter</Link></p>
         </section>
