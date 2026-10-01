@@ -4,13 +4,18 @@ import { readFileSync } from "node:fs";
 
 const route = readFileSync("src/app/api/requests/route.ts", "utf8");
 
-test("BRIF-144: request creation no longer returns 503 when privileged Supabase is unavailable", () => {
-  const creationPart = route.slice(0, route.indexOf("// Notification is best-effort"));
-  assert.match(creationPart, /createPublicServerSupabaseClient\(\)/);
-  assert.doesNotMatch(creationPart, /server_not_configured|status:\s*503/);
+test("BRIF-144: durable request creation remains independent from notification infrastructure", () => {
+  const insert = route.indexOf('.from("drop_service_requests").insert');
+  const insertFailure = route.indexOf("if (insertError)", insert);
+  const notification = route.indexOf("await resolveArtisanAuthEmail", insertFailure);
+  const success = route.indexOf("return noStore({ requestId: requestContext.requestId }, 201)", notification);
 
-  const notificationPart = route.slice(route.indexOf("// Notification is best-effort"));
-  assert.match(notificationPart, /privileged_supabase_not_configured/);
+  assert.ok(insert >= 0 && insertFailure > insert && notification > insertFailure && success > notification);
+  const creationPart = route.slice(0, notification);
+  assert.match(creationPart, /createPublicServerSupabaseClient\(\)/);
+  assert.doesNotMatch(creationPart, /server_not_configured|status:\s*503|createPrivilegedSupabaseClient/);
+
+  const notificationPart = route.slice(notification, success);
   assert.match(notificationPart, /artisan_request_notification_failed/);
-  assert.match(notificationPart, /return noStore\(\{ requestId: requestContext\.requestId \}, 201\)/);
+  assert.doesNotMatch(notificationPart, /return noStore\(\{ error: .* \}, 5\d\d\)/);
 });
