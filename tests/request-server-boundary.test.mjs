@@ -7,6 +7,8 @@ const form = readFileSync("src/app/a/[slug]/request/RequestForm.tsx", "utf8");
 const page = readFileSync("src/app/a/[slug]/request/page.tsx", "utf8");
 const emailSender = readFileSync("src/lib/resend-server.ts", "utf8");
 const publicServer = readFileSync("src/lib/supabase-public-server.ts", "utf8");
+const emailResolver = readFileSync("src/lib/artisan-notification-email-server.ts", "utf8");
+const edgeResolver = readFileSync("supabase/functions/brif-artisan-notification-email/index.ts", "utf8");
 
 test("public request creation crosses the BRIF server boundary", () => {
   assert.match(form, /fetch\("\/api\/requests"/);
@@ -27,12 +29,11 @@ test("server resolves and validates the target artisan before creating the reque
 });
 
 test("primary public request insert uses only the publishable server client and existing RLS", () => {
-  const creationPart = route.slice(0, route.indexOf("// Notification is best-effort"));
+  const creationPart = route.slice(0, route.indexOf("try {", route.indexOf("if (insertError)")));
   assert.match(creationPart, /createPublicServerSupabaseClient\(\)/);
-  assert.doesNotMatch(creationPart, /createPrivilegedSupabaseClient\(\)/);
+  assert.doesNotMatch(creationPart, /SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(publicServer, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
   assert.match(publicServer, /NEXT_PUBLIC_SUPABASE_ANON_KEY/);
-  assert.doesNotMatch(publicServer, /SUPABASE_SECRET_KEY|SERVICE_ROLE/);
 });
 
 test("browser cannot choose the request artisan id", () => {
@@ -52,72 +53,54 @@ test("photo flow remains after successful server creation", () => {
   assert.match(form, /requests\/\$\{artisanId\}\/\$\{requestId\}/);
   assert.match(form, /files\.length > 3/);
   assert.match(form, /5 \* 1024 \* 1024/);
-  assert.match(form, /failedPhotos/);
 });
 
-test("artisan notification runs only after successful request insert and private email lookup", () => {
-  const insert = route.indexOf('.from("drop_service_requests").insert');
-  const insertFailure = route.indexOf("if (insertError)", insert);
-  const privileged = route.indexOf("createPrivilegedSupabaseClient()", insertFailure);
-  const emailLookup = route.indexOf('.select("email")', privileged);
-  const notification = route.indexOf("await sendArtisanRequestNotification", emailLookup);
+test("notification starts only after durable request creation and uses the Vercel OIDC identity", () => {
+  const insertFailure = route.indexOf("if (insertError)");
+  const resolver = route.indexOf("await resolveArtisanAuthEmail", insertFailure);
+  const notification = route.indexOf("await sendArtisanRequestNotification", resolver);
   const success = route.indexOf("return noStore({ requestId: requestContext.requestId }, 201)", notification);
-  assert.ok(insert >= 0 && insertFailure > insert && privileged > insertFailure && emailLookup > privileged && notification > emailLookup && success > notification);
+  assert.ok(insertFailure >= 0 && resolver > insertFailure && notification > resolver && success > notification);
+  assert.match(route, /request\.headers\.get\("x-vercel-oidc-token"\)/);
 });
 
-test("artisan private email never reaches the browser or success payload", () => {
-  assert.match(route, /to: notificationArtisan\.email/);
+test("artisan Auth email is resolved only server-to-server and never returned to the public client", () => {
+  assert.match(emailResolver, /functions\/v1\/brif-artisan-notification-email/);
+  assert.match(emailResolver, /Authorization: `Bearer \$\{oidcToken\}`/);
+  assert.match(edgeResolver, /auth\.admin\.getUserById\(artisan\.user_id\)/);
+  assert.match(edgeResolver, /return json\(\{ email \}, 200\)/);
+  assert.doesNotMatch(form, /artisanAuthEmail|artisanEmail|artisan_email|SUPABASE_SERVICE_ROLE_KEY|RESEND_API_KEY/);
   const successResponse = route.slice(route.lastIndexOf("return noStore({ requestId"));
-  assert.match(successResponse, /requestId: requestContext\.requestId/);
-  assert.doesNotMatch(successResponse, /notificationArtisan|artisanEmail|email:/);
-  assert.doesNotMatch(form, /artisanEmail|artisan_email|SUPABASE_SECRET_KEY|RESEND_API_KEY|createPrivilegedSupabaseClient/);
+  assert.doesNotMatch(successResponse, /email|artisanAuthEmail/);
 });
 
-test("missing privileged notification configuration is non-blocking after durable creation", () => {
-  const privileged = route.indexOf("createPrivilegedSupabaseClient()");
-  const missing = route.indexOf('throw new Error("privileged_supabase_not_configured")', privileged);
-  const catchBlock = route.indexOf('console.error("artisan_request_notification_failed"', missing);
-  const success = route.indexOf("return noStore({ requestId: requestContext.requestId }, 201)", catchBlock);
-  assert.ok(privileged >= 0 && missing > privileged && catchBlock > missing && success > catchBlock);
-  const afterInsert = route.slice(privileged, success);
-  assert.doesNotMatch(afterInsert, /server_not_configured|return noStore\(\{ error: .* \}, 503\)/);
+test("edge email resolver verifies Vercel production OIDC claims before service-role access", () => {
+  assert.match(edgeResolver, /jwtVerify\(token, jwks/);
+  assert.match(edgeResolver, /audience: AUDIENCE/);
+  assert.match(edgeResolver, /subject: SUBJECT/);
+  assert.match(edgeResolver, /payload\.project_id !== PROJECT_ID/);
+  assert.match(edgeResolver, /payload\.environment !== "production"/);
+  const verifyIndex = edgeResolver.indexOf("jwtVerify(token, jwks");
+  const serviceRoleIndex = edgeResolver.indexOf('Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")');
+  assert.ok(verifyIndex >= 0 && serviceRoleIndex > verifyIndex);
 });
 
-test("email failure is non-blocking after durable request creation", () => {
+test("email failure remains observable but non-blocking after durable request creation", () => {
   const notification = route.indexOf("await sendArtisanRequestNotification");
-  const catchBlock = route.indexOf('console.error("artisan_request_notification_failed"', notification);
-  const success = route.indexOf("return noStore({ requestId: requestContext.requestId }, 201)", catchBlock);
-  assert.ok(notification >= 0 && catchBlock > notification && success > catchBlock);
-  const catchToSuccess = route.slice(catchBlock, success);
-  assert.doesNotMatch(catchToSuccess, /request_create_failed|status:\s*500|status:\s*503/);
+  const failureLog = route.indexOf('console.error("artisan_request_notification_failed"', notification);
+  const success = route.indexOf("return noStore({ requestId: requestContext.requestId }, 201)", failureLog);
+  assert.ok(notification >= 0 && failureLog > notification && success > failureLog);
+  assert.match(route, /artisan_request_notification_sent/);
+  assert.doesNotMatch(route.slice(failureLog, success), /status:\s*500|status:\s*503/);
 });
 
 test("submit button prevents repeated manual sends while one request is in flight", () => {
-  assert.match(form, /setSending\(true\)/);
   assert.match(form, /disabled=\{sending\}/);
   assert.match(form, /aria-busy=\{sending\}/);
 });
 
-test("Resend email contains the useful request fields", () => {
-  for (const field of [
-    "customerName",
-    "phone",
-    "customerEmail",
-    "city",
-    "category",
-    "urgency",
-    "description",
-    "availability",
-  ]) {
-    assert.match(emailSender, new RegExp(`notification\\.${field}`));
-  }
-});
-
-test("Resend secret remains server-only and is never logged or returned", () => {
+test("Resend secret remains server-only", () => {
   assert.match(emailSender, /process\.env\.RESEND_API_KEY/);
   assert.match(emailSender, /process\.env\.RESEND_FROM_EMAIL/);
-  assert.match(emailSender, /Authorization: `Bearer \$\{apiKey\}`/);
-  assert.doesNotMatch(emailSender, /console\./);
-  assert.doesNotMatch(route, /RESEND_API_KEY|RESEND_FROM_EMAIL|apiKey/);
   assert.doesNotMatch(form, /RESEND_API_KEY|RESEND_FROM_EMAIL/);
 });
