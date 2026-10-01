@@ -13,6 +13,7 @@ import {
 } from "@/lib/subscription-presentation";
 import { canStartSubscriptionCheckout } from "@/lib/subscription-checkout-policy";
 import { canManageSubscriptionInPortal } from "@/lib/subscription-portal-policy";
+import type { TrialDisplayState } from "@/lib/trial-state";
 
 type Artisan = { id: string; company_name: string; slug: string };
 type RequestRow = {
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   const [artisan, setArtisan] = useState<Artisan | null>(null);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionDisplayInput | null>(null);
+  const [trial, setTrial] = useState<TrialDisplayState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [checkoutInterval, setCheckoutInterval] = useState<"month" | "year" | null>(null);
@@ -81,9 +83,15 @@ export default function DashboardPage() {
         subscriptionResponse.ok &&
         typeof subscriptionPayload === "object" &&
         subscriptionPayload !== null &&
-        "subscription" in subscriptionPayload
+        "subscription" in subscriptionPayload &&
+        "trial" in subscriptionPayload
       ) {
-        setSubscription((subscriptionPayload as { subscription: SubscriptionDisplayInput | null }).subscription);
+        const payload = subscriptionPayload as {
+          subscription: SubscriptionDisplayInput | null;
+          trial: TrialDisplayState;
+        };
+        setSubscription(payload.subscription);
+        setTrial(payload.trial);
       } else {
         setError("Votre abonnement n’a pas pu être chargé. Vos demandes restent accessibles.");
       }
@@ -267,11 +275,11 @@ export default function DashboardPage() {
           <div className="alert-info" role="status">Paiement terminé. Vérification de votre abonnement en cours.</div>
         )}
 
-        <section className="card" aria-labelledby="subscription-heading" style={{ marginBottom: 20 }}>
-          <p className="eyebrow" id="subscription-heading">Abonnement</p>
-          <div>
-            {subscription ? (
-              <>
+        <section className="card subscription-card" aria-labelledby="subscription-heading" style={{ marginBottom: 20 }}>
+          {subscription && canManageSubscriptionInPortal(subscription.status) ? (
+            <>
+              <p className="eyebrow" id="subscription-heading">Abonnement</p>
+              <div>
                 <strong>
                   {subscriptionStatusLabels[subscription.status]}
                   {getBillingLabel(subscription.billing_interval) ? ` · ${getBillingLabel(subscription.billing_interval)}` : ""}
@@ -282,28 +290,52 @@ export default function DashboardPage() {
                   </p>
                 )}
                 {subscription.cancel_at_period_end && <span className="badge badge-warning">Annulation programmée</span>}
-              </>
-            ) : (
-              <p className="muted">Aucun abonnement actif</p>
-            )}
-            {subscription && canManageSubscriptionInPortal(subscription.status) && (
-              <div style={{ marginTop: 14 }}>
-                <button className="button" type="button" disabled={portalOpening} onClick={() => void openPortal()}>
-                  {portalOpening ? "Ouverture…" : "Gérer mon abonnement"}
-                </button>
+                <div style={{ marginTop: 14 }}>
+                  <button className="button" type="button" disabled={portalOpening} onClick={() => void openPortal()}>
+                    {portalOpening ? "Ouverture…" : "Gérer mon abonnement"}
+                  </button>
+                </div>
               </div>
-            )}
-            {canStartSubscriptionCheckout(subscription?.status) && (
-              <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-                <button className="button" type="button" disabled={checkoutInterval !== null} onClick={() => void startCheckout("month")}>
-                  {checkoutInterval === "month" ? "Ouverture…" : "Choisir le mensuel — 39 €/mois"}
-                </button>
-                <button className="button" type="button" disabled={checkoutInterval !== null} onClick={() => void startCheckout("year")}>
-                  {checkoutInterval === "year" ? "Ouverture…" : "Choisir l’annuel — 390 €/an"}
-                </button>
-              </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <>
+              <p className="eyebrow" id="subscription-heading">Période d’essai gratuite</p>
+              {trial ? (
+                <div className="trial-panel">
+                  {trial.phase === "full" && (
+                    <>
+                      <strong>Votre essai BRIF est actif.</strong>
+                      <p className="muted">Fin prévue le {formatTrialEndDate(trial.ends_at)} · {trial.days_remaining} jours restants.</p>
+                    </>
+                  )}
+                  {trial.phase === "ending" && (
+                    <>
+                      <strong>Il vous reste {trial.days_remaining} jour{trial.days_remaining > 1 ? "s" : ""} d’essai gratuit.</strong>
+                      <p className="muted">Pour continuer à utiliser BRIF après votre essai, vous pourrez choisir votre abonnement.</p>
+                    </>
+                  )}
+                  {trial.phase === "expired" && (
+                    <>
+                      <strong>Votre période d’essai gratuite est terminée.</strong>
+                      <p className="muted">Choisissez un abonnement pour continuer avec BRIF.</p>
+                    </>
+                  )}
+                  {trial.phase !== "full" && canStartSubscriptionCheckout(subscription?.status) && (
+                    <div className="subscription-offers">
+                      <button className="button subscription-offer-button" type="button" disabled={checkoutInterval !== null} onClick={() => void startCheckout("month")}>
+                        {checkoutInterval === "month" ? "Ouverture…" : "Mensuel — 39 €/mois"}
+                      </button>
+                      <button className="button subscription-offer-button" type="button" disabled={checkoutInterval !== null} onClick={() => void startCheckout("year")}>
+                        {checkoutInterval === "year" ? "Ouverture…" : "Annuel — 390 €/an"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="muted">Votre période d’essai n’a pas pu être chargée.</p>
+              )}
+            </>
+          )}
         </section>
 
         <section className="attention-panel" aria-label="À traiter">
@@ -369,6 +401,14 @@ export default function DashboardPage() {
       </div>
     </main>
   );
+}
+
+function formatTrialEndDate(value: string) {
+  return new Date(value).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function Metric({ label, value }: { label: string; value: string | number }) {

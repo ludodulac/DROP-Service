@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getStripeServerConfig } from "@/lib/stripe-server";
+import { getTrialDisplayState } from "@/lib/trial-state";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,10 @@ export async function GET() {
   if (authError || !authData.user) return noStore({ error: "not_authenticated" }, 401);
 
   const { data: artisan, error: artisanError } = await supabase
-    .from("drop_service_artisans").select("id").eq("user_id", authData.user.id).maybeSingle();
+    .from("drop_service_artisans")
+    .select("id, trial_started_at, trial_ends_at")
+    .eq("user_id", authData.user.id)
+    .maybeSingle();
   if (artisanError) return noStore({ error: "artisan_lookup_failed" }, 500);
   if (!artisan) return noStore({ error: "artisan_not_found" }, 404);
 
@@ -28,5 +32,12 @@ export async function GET() {
     .eq("stripe_environment", config.environment)
     .maybeSingle();
   if (error) return noStore({ error: "subscription_lookup_failed" }, 500);
-  return noStore({ subscription }, 200);
+
+  const trial = getTrialDisplayState(
+    artisan.trial_started_at,
+    artisan.trial_ends_at,
+    new Date(),
+  );
+
+  return noStore({ subscription, trial }, 200);
 }

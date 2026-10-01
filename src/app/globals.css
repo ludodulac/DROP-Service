@@ -242,3 +242,15 @@ textarea.field { min-height: 120px; resize: vertical; line-height: 1.5; }
   .artisan-share-buttons { display: grid; grid-template-columns: 1fr 1fr; }
   .artisan-share-buttons .button { width: 100%; }
 }
+
+.subscription-card { display: grid; gap: 12px; }
+.trial-panel { display: grid; gap: 8px; }
+.trial-panel > p { margin: 0; }
+.subscription-offers { display: grid; gap: 10px; margin-top: 8px; }
+.subscription-offer-button {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: #bdd5f8;
+  box-shadow: none;
+}
+.subscription-offer-button:hover { background: #e2efff; border-color: #9ec2f3; }
