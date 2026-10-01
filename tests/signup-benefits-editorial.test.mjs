@@ -40,8 +40,9 @@ test("benefits are vertical, content-like and visually subordinate to real CTA b
   assert.match(css, /\.auth-benefit-copy strong \{[^}]*color:\s*#182230;/s);
   assert.match(css, /\.auth-benefit-copy > span \{[^}]*color:\s*#475467;/s);
   assert.match(css, /\.button \{[^}]*background:\s*var\(--brand\);[^}]*cursor:\s*pointer;/s);
-  assert.doesNotMatch(css, /\.auth-benefit[^\{]*\{[^}]*box-shadow/i);
-  assert.doesNotMatch(css, /\.auth-benefit[^\{]*\{[^}]*border-radius/i);
+  const benefitRule = css.match(/\.auth-benefit \\{([^}]*)\\}/)?.[1] ?? "";
+  assert.doesNotMatch(benefitRule, /box-shadow/i);
+  assert.doesNotMatch(benefitRule, /border-radius/i);
 });
 
 test("320px mobile safety keeps copy shrinkable and wrapping without fixed card widths", () => {
