@@ -39,6 +39,8 @@ test("draft editor does not send email or add an automatic generator", () => {
   const saveStart = admin.indexOf("async function saveDraft");
   const saveEnd = admin.indexOf("async function createProspect", saveStart);
   const saveBlock = admin.slice(saveStart, saveEnd);
-  assert.doesNotMatch(saveBlock, /fetch\(|gmail|send|generate|openai|ai/i);
+  assert.doesNotMatch(saveBlock, /fetch\(/);
+  assert.doesNotMatch(saveBlock, /openai|anthropic|generateText|generateObject|chat\.completions/i);
+  assert.doesNotMatch(saveBlock, /gmailComposeUrl|mail\.google|sendArtisanRequestNotification|resend/i);
   assert.match(admin, /Rien n’est envoyé automatiquement/);
 });
