@@ -20,7 +20,7 @@ test("signup does not try to detect whether the email already exists", () => {
   const end = signup.indexOf("return (", start);
   const submitFlow = signup.slice(start, end);
 
-  assert.match(submitFlow, /supabase\.auth\.signUp\(\{ email, password \}\)/);
+  assert.match(submitFlow, /supabase\.auth\.signUp\(\{[\s\S]*?email,[\s\S]*?password,[\s\S]*?options: \{ emailRedirectTo: SIGNUP_CONFIRM_URL \}[\s\S]*?\}\)/);
   assert.match(submitFlow, /if \(signUpError\)/);
   assert.match(submitFlow, /if \(data\.session\)/);
   assert.doesNotMatch(submitFlow, /getUser|admin|listUsers|existing|already registered|email_exists|user_exists/i);
