@@ -382,8 +382,7 @@ export default function AdminPage() {
 
           {error && <p className="alert-error">{error}</p>}
 
-          {
-            <section className="data-panel">
+          <section className="data-panel">
               <div className="section-heading"><div><h2>{activeTab === "emails" ? "Messages préparés" : activeTab === "clients" ? "Clients" : "Pipeline commercial"}</h2><p className="muted">Cliquez sur une ligne pour voir le détail, valider le message ou l’ouvrir dans Gmail.</p></div><span className="count-label">{visibleProspects.length} résultat{visibleProspects.length > 1 ? "s" : ""}</span></div>
               {visibleProspects.length === 0 ? <div className="empty-state"><div className="empty-icon">✓</div><h3>Rien ici pour le moment</h3><p>Cette vue se remplira au fur et à mesure de la prospection et des pilotes.</p></div> : (
                 <>
@@ -418,7 +417,6 @@ export default function AdminPage() {
                 </>
               )}
             </section>
-          )}
         </section>
       </div>
 
