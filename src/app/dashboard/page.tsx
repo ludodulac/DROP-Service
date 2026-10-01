@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getArtisanPublicUrl } from "@/lib/public-app-url";
 import {
   getBillingLabel,
   getSubscriptionPeriodLabel,
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const [checkoutInterval, setCheckoutInterval] = useState<"month" | "year" | null>(null);
   const [checkoutReturn, setCheckoutReturn] = useState<string | null>(null);
   const [portalOpening, setPortalOpening] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState("");
 
   useEffect(() => {
     setCheckoutReturn(new URLSearchParams(window.location.search).get("checkout"));
@@ -171,6 +173,43 @@ export default function DashboardPage() {
     router.replace("/login");
   }
 
+  function showShareFeedback(message: string) {
+    setShareFeedback(message);
+    window.setTimeout(() => setShareFeedback((current) => current === message ? "" : current), 1800);
+  }
+
+  async function copyPublicPageLink() {
+    if (!artisan) return;
+    const publicUrl = getArtisanPublicUrl(artisan.slug);
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      showShareFeedback("Lien copié");
+    } catch {
+      showShareFeedback("Impossible de copier le lien");
+    }
+  }
+
+  async function sharePublicPage() {
+    if (!artisan) return;
+    const publicUrl = getArtisanPublicUrl(artisan.slug);
+
+    if (!navigator.share) {
+      await copyPublicPageLink();
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: artisan.company_name,
+        text: "Vous pouvez m’envoyer votre demande ici :",
+        url: publicUrl,
+      });
+    } catch (shareError) {
+      if (shareError instanceof DOMException && shareError.name === "AbortError") return;
+      await copyPublicPageLink();
+    }
+  }
+
   const metrics = useMemo(() => {
     const won = requests.filter((r) => r.status === "won").length;
     const quoted = requests.filter((r) => r.status === "quote_sent" || r.status === "won").length;
@@ -208,7 +247,19 @@ export default function DashboardPage() {
             <h1>Vos demandes</h1>
             <p className="muted">Repérez ce qui demande votre attention et suivez chaque demande jusqu’au chantier gagné.</p>
           </div>
-          {artisan && <Link className="button primary-action" href={`/a/${artisan.slug}?preview=1`}>Prévisualiser ma page publique</Link>}
+          {artisan && (
+            <div className="artisan-page-actions">
+              <Link className="button primary-action" href={`/a/${artisan.slug}?preview=1`}>Prévisualiser ma page publique</Link>
+              <div className="artisan-share-zone" aria-label="Partager ma page client">
+                <span className="artisan-share-label">Partager ma page client</span>
+                <div className="artisan-share-buttons">
+                  <button className="button button-secondary" type="button" onClick={() => void copyPublicPageLink()}>Copier le lien</button>
+                  <button className="button button-secondary" type="button" onClick={() => void sharePublicPage()}>Partager</button>
+                </div>
+                {shareFeedback && <span className="artisan-share-feedback" role="status">{shareFeedback}</span>}
+              </div>
+            </div>
+          )}
         </section>
 
         {error && <div className="alert-error" role="alert">{error}</div>}

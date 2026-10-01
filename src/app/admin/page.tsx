@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getPublicAppUrl } from "@/lib/public-app-url";
 
 type ProspectStatus = "to_review" | "approved" | "contacted" | "replied" | "demo" | "pilot" | "client" | "declined";
 type Prospect = {
@@ -100,6 +101,8 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  const [usefulLinksOpen, setUsefulLinksOpen] = useState(false);
+  const [copiedUsefulLink, setCopiedUsefulLink] = useState<string | null>(null);
 
   useEffect(() => { void loadAdmin(); }, []);
 
@@ -114,6 +117,16 @@ export default function AdminPage() {
     }
 
     window.location.replace("/owner/login");
+  }
+
+  async function copyUsefulLink(key: string, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUsefulLink(key);
+      window.setTimeout(() => setCopiedUsefulLink((current) => current === key ? null : current), 1800);
+    } catch {
+      setError("Le lien n’a pas pu être copié.");
+    }
   }
 
   async function loadAdmin() {
@@ -355,6 +368,14 @@ export default function AdminPage() {
                       ×
                     </button>
                   </div>
+                  <button
+                    className="admin-owner-menu-item"
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setOwnerMenuOpen(false); setUsefulLinksOpen(true); }}
+                  >
+                    Liens utiles
+                  </button>
                   <button className="admin-owner-menu-item" type="button" role="menuitem" onClick={() => void signOutOwner()}>
                     Se déconnecter
                   </button>
@@ -422,8 +443,60 @@ export default function AdminPage() {
 
       {selected && <ProspectDrawer prospect={selected} saving={saving} copied={copiedId === selected.id} onCopy={() => void copyDraft(selected)} onClose={() => setSelectedId(null)} onSaveDraft={(subject, message) => saveDraft(selected.id, subject, message)} onStatus={(status) => void updateStatus(selected.id, status)} onDelete={() => void deleteProspect(selected.id)} />}
       {creating && <CreateProspectModal saving={saving} onClose={() => setCreating(false)} onSubmit={createProspect} />}
+      {usefulLinksOpen && (
+        <UsefulLinksModal
+          copiedKey={copiedUsefulLink}
+          onClose={() => setUsefulLinksOpen(false)}
+          onCopy={(key, url) => void copyUsefulLink(key, url)}
+        />
+      )}
     </main>
   );
+}
+
+const OWNER_USEFUL_LINKS = [
+  {
+    key: "signup",
+    label: "Inscription artisan",
+    description: "Lien à envoyer à un artisan qui doit créer son espace.",
+    url: getPublicAppUrl("/signup"),
+  },
+  {
+    key: "login",
+    label: "Connexion artisan",
+    description: "Lien de connexion pour un artisan déjà inscrit.",
+    url: getPublicAppUrl("/login"),
+  },
+  {
+    key: "home",
+    label: "Accueil BRIF",
+    description: "Page publique de présentation de BRIF.",
+    url: getPublicAppUrl("/"),
+  },
+] as const;
+
+function UsefulLinksModal({ copiedKey, onClose, onCopy }: { copiedKey: string | null; onClose: () => void; onCopy: (key: string, url: string) => void }) {
+  return <div className="admin-overlay" onMouseDown={onClose}>
+    <section className="admin-modal admin-useful-links" aria-labelledby="useful-links-title" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="admin-drawer-head">
+        <div><p className="eyebrow">Owner</p><h2 id="useful-links-title">Liens utiles</h2><p className="muted">Les principales adresses BRIF à partager.</p></div>
+        <button className="text-button" type="button" onClick={onClose}>Fermer</button>
+      </div>
+      <div className="admin-useful-links-list">
+        {OWNER_USEFUL_LINKS.map((item) => (
+          <article className="admin-useful-link" key={item.key}>
+            <div>
+              <strong>{item.label}</strong>
+              <span>{item.description}</span>
+            </div>
+            <button className="button button-secondary" type="button" onClick={() => onCopy(item.key, item.url)}>
+              {copiedKey === item.key ? "Lien copié" : "Copier le lien"}
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  </div>;
 }
 
 function AdminNav({ active, onClick, label, badge }: { active: boolean; onClick: () => void; label: string; badge: string }) {

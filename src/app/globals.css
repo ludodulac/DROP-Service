@@ -228,3 +228,17 @@ textarea.field { min-height: 120px; resize: vertical; line-height: 1.5; }
 .client-preview-frame { padding:12px; border:2px solid #d7dce3; border-radius:14px; background:#fff; }
 .client-preview-label { margin:0 0 10px; color:#475467; font-size:12px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
 @media(max-width:640px){.artisan-preview-shell{padding:10px;border-radius:14px}.artisan-preview-header{padding:14px;margin-bottom:12px}.artisan-preview-header h1{font-size:20px}.client-preview-frame{padding:8px}}
+
+
+.artisan-page-actions { flex: 0 0 auto; display: grid; gap: 10px; min-width: min(100%, 300px); }
+.artisan-share-zone { display: grid; gap: 8px; }
+.artisan-share-label { color: var(--text-muted); font-size: 12px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.artisan-share-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.artisan-share-buttons .button { flex: 1 1 120px; }
+.artisan-share-feedback { min-height: 18px; color: var(--success); font-size: 13px; font-weight: 700; }
+
+@media (max-width: 760px) {
+  .artisan-page-actions { width: 100%; min-width: 0; }
+  .artisan-share-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+  .artisan-share-buttons .button { width: 100%; }
+}
