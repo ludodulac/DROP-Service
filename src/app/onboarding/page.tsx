@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -16,18 +16,7 @@ export default function OnboardingPage() {
   const [phone, setPhone] = useState("");
   const [slug, setSlug] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
-
-  useEffect(() => { void checkAccount(); }, []);
-
-  async function checkAccount() {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) { router.replace("/login"); return; }
-    const { data } = await supabase.from("drop_service_artisans").select("id").eq("user_id", userData.user.id).maybeSingle();
-    if (data) { router.replace("/dashboard"); return; }
-    setChecking(false);
-  }
 
   function handleCompanyChange(value: string) {
     setCompanyName(value);
@@ -68,8 +57,6 @@ export default function OnboardingPage() {
 
     router.replace("/dashboard");
   }
-
-  if (checking) return <main style={{ padding: "56px 0" }}><div className="loading-state">Préparation de votre espace…</div></main>;
 
   return (
     <main style={{ padding: "56px 0 72px" }}>
