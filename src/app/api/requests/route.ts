@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createPublicServerSupabaseClient } from "@/lib/supabase-public-server";
 import { createPrivilegedSupabaseClient } from "@/lib/supabase-privileged-server";
 import { sendArtisanRequestNotification } from "@/lib/resend-server";
 
@@ -69,18 +70,21 @@ export async function POST(request: Request) {
     return noStore({ error: "invalid_request" }, 400);
   }
 
-  const supabase = createPrivilegedSupabaseClient();
-  if (!supabase) {
-    return noStore({ error: "server_not_configured" }, 503);
-  }
+  // Public request creation deliberately runs with the publishable key.
+  // Existing RLS limits anon inserts to active artisans and status='new'.
+  const supabase = createPublicServerSupabaseClient();
 
   const { data: artisan, error: artisanError } = await supabase
     .from("drop_service_artisans")
-    .select("id, email, is_active")
+    .select("id, is_active")
     .eq("slug", slug)
     .maybeSingle();
 
   if (artisanError) {
+    console.error("artisan_lookup_failed", {
+      code: artisanError.code,
+      message: artisanError.message,
+    });
     return noStore({ error: "artisan_lookup_failed" }, 500);
   }
 
@@ -95,7 +99,6 @@ export async function POST(request: Request) {
   const requestContext = {
     requestId: crypto.randomUUID(),
     artisanId: artisan.id,
-    artisanEmail: artisan.email,
   };
 
   const { error: insertError } = await supabase.from("drop_service_requests").insert({
@@ -120,9 +123,26 @@ export async function POST(request: Request) {
     return noStore({ error: "request_create_failed" }, 500);
   }
 
+  // Notification is best-effort after durable request creation.
+  // Privileged access is used only to read the private artisan email.
   try {
+    const privilegedSupabase = createPrivilegedSupabaseClient();
+    if (!privilegedSupabase) {
+      throw new Error("privileged_supabase_not_configured");
+    }
+
+    const { data: notificationArtisan, error: notificationArtisanError } = await privilegedSupabase
+      .from("drop_service_artisans")
+      .select("email")
+      .eq("id", requestContext.artisanId)
+      .single();
+
+    if (notificationArtisanError) {
+      throw new Error("artisan_notification_email_lookup_failed");
+    }
+
     await sendArtisanRequestNotification({
-      to: requestContext.artisanEmail,
+      to: notificationArtisan.email,
       requestId: requestContext.requestId,
       customerName,
       phone,
@@ -133,9 +153,10 @@ export async function POST(request: Request) {
       description,
       availability,
     });
-  } catch {
+  } catch (notificationError) {
     console.error("artisan_request_notification_failed", {
       requestId: requestContext.requestId,
+      reason: notificationError instanceof Error ? notificationError.message : "unknown",
     });
   }
 
