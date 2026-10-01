@@ -274,3 +274,16 @@
   .admin-modal textarea.field { min-height: 82px; }
   .admin-modal > .button { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -8px 18px rgba(255,255,255,.92); }
 }
+
+
+.admin-useful-links { max-width: 620px; }
+.admin-useful-links-list { display: grid; gap: 0; border-top: 1px solid var(--border); }
+.admin-useful-link { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border); }
+.admin-useful-link > div { min-width: 0; display: grid; gap: 4px; }
+.admin-useful-link strong { color: var(--text); }
+.admin-useful-link span { color: var(--text-muted); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+
+@media (max-width: 560px) {
+  .admin-useful-link { grid-template-columns: 1fr; }
+  .admin-useful-link .button { width: 100%; }
+}
