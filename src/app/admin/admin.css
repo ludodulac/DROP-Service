@@ -262,3 +262,15 @@
     line-height: 1.45;
   }
 }
+
+
+.admin-delete-button { background: #fff; color: var(--danger); border-color: #f0b9b5; }
+.admin-delete-button:hover { background: var(--danger-soft); }
+
+@media (max-width: 760px) {
+  .admin-modal { gap: 12px; padding: 18px; max-height: calc(100dvh - 16px); }
+  .admin-modal .admin-drawer-head { padding-bottom: 8px; }
+  .admin-modal .field { min-height: 42px; }
+  .admin-modal textarea.field { min-height: 82px; }
+  .admin-modal > .button { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -8px 18px rgba(255,255,255,.92); }
+}

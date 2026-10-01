@@ -36,7 +36,7 @@ type AdminTask = {
 
 const statusLabels: Record<ProspectStatus, string> = {
   to_review: "À valider",
-  approved: "Validé",
+  approved: "Message prêt",
   contacted: "Contacté",
   replied: "A répondu",
   demo: "Démo",
@@ -69,13 +69,10 @@ const initialProspects = [
 function gmailComposeUrl(prospect: Prospect) {
   if (!prospect.email || !prospect.draft_email) return null;
   const params = new URLSearchParams({
-    view: "cm",
-    fs: "1",
-    to: prospect.email,
-    su: prospect.draft_subject ?? "",
+    subject: prospect.draft_subject ?? "",
     body: prospect.draft_email,
   });
-  return `https://mail.google.com/mail/?${params.toString()}`;
+  return `mailto:${encodeURIComponent(prospect.email)}?${params.toString()}`;
 }
 
 function nextActionForStatus(status: ProspectStatus) {
@@ -97,7 +94,7 @@ export default function AdminPage() {
   const [tasks, setTasks] = useState<AdminTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"today" | "prospects" | "emails" | "pilots" | "clients">("today");
+  const [activeTab, setActiveTab] = useState<"prospects" | "emails" | "clients">("prospects");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -258,6 +255,21 @@ export default function AdminPage() {
     return true;
   }
 
+  async function deleteProspect(id: string) {
+    if (!window.confirm("Supprimer définitivement ce prospect ?")) return;
+    setSaving(true);
+    setError("");
+    await supabase.from("drop_service_admin_tasks").delete().eq("prospect_id", id);
+    const { error: deleteError } = await supabase.from("drop_service_admin_prospects").delete().eq("id", id);
+    if (deleteError) setError("Le prospect n’a pas pu être supprimé.");
+    else {
+      setProspects((current) => current.filter((prospect) => prospect.id !== id));
+      setTasks((current) => current.filter((task) => task.prospect_id !== id));
+      setSelectedId(null);
+    }
+    setSaving(false);
+  }
+
   async function createProspect(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -274,6 +286,8 @@ export default function AdminPage() {
       why_fit: String(form.get("why") ?? "").trim() || null,
       status: "to_review",
       priority: "normal",
+      draft_subject: `Une façon simple de recevoir des demandes clients plus claires`,
+      draft_email: `Bonjour ${String(form.get("contact") ?? "").trim() || String(form.get("company") ?? "").trim()},\n\nJe me permets de vous contacter car j’ai créé BRIF, un outil destiné aux artisans pour recevoir des demandes clients plus claires et éviter une partie des allers-retours.\n\nLe principe est simple : vos clients décrivent leur besoin, peuvent ajouter des photos et vous recevez les informations utiles avant de les rappeler.\n\nJe peux vous montrer simplement comment cela fonctionnerait pour votre activité.\n\nBien cordialement,\nLudovic Dulac`,
       next_action: "Préparer et valider le premier message",
     });
     if (insertError) setError("Le prospect n'a pas pu être ajouté.");
@@ -303,7 +317,6 @@ export default function AdminPage() {
 
   const visibleProspects = prospects.filter((p) => {
     if (activeTab === "emails") return ["to_review", "approved"].includes(p.status) && Boolean(p.draft_email);
-    if (activeTab === "pilots") return p.status === "pilot";
     if (activeTab === "clients") return p.status === "client";
     return true;
   });
@@ -350,10 +363,8 @@ export default function AdminPage() {
             </div>
           </div>
           <nav className="admin-nav" aria-label="Administration">
-            <AdminNav active={activeTab === "today"} onClick={() => setActiveTab("today")} label="Aujourd'hui" badge={`${counts.today} action${counts.today > 1 ? "s" : ""}`} />
             <AdminNav active={activeTab === "prospects"} onClick={() => setActiveTab("prospects")} label="Prospects" badge={`${prospects.length} total`} />
             <AdminNav active={activeTab === "emails"} onClick={() => setActiveTab("emails")} label="Emails à valider" badge={`${counts.emailMessages} message${counts.emailMessages > 1 ? "s" : ""}`} />
-            <AdminNav active={activeTab === "pilots"} onClick={() => setActiveTab("pilots")} label="Pilotes" badge={String(counts.pilots)} />
             <AdminNav active={activeTab === "clients"} onClick={() => setActiveTab("clients")} label="Clients" badge={String(counts.clients)} />
           </nav>
           <div className="admin-sidebar-footer"><span>Poste de pilotage privé</span></div>
@@ -363,44 +374,16 @@ export default function AdminPage() {
           <header className="admin-header">
             <div>
               <p className="eyebrow">Poste de pilotage</p>
-              <h1>{activeTab === "today" ? "Aujourd'hui" : activeTab === "prospects" ? "Prospects" : activeTab === "emails" ? "Emails à valider" : activeTab === "pilots" ? "Pilotes" : "Clients"}</h1>
-              <p className="muted">{activeTab === "today" ? "Je prépare le travail ; vous ne voyez ici que ce qui demande une décision ou une action." : "Tout ce qu'il faut pour avancer sans retourner dans vos notes."}</p>
+              <h1>{activeTab === "prospects" ? "Prospects" : activeTab === "emails" ? "Emails à valider" : "Clients"}</h1>
+              <p className="muted">Tout ce qu’il faut pour avancer sans retourner dans vos notes.</p>
             </div>
             <button className="button" type="button" onClick={() => setCreating(true)}>Ajouter un prospect</button>
           </header>
 
           {error && <p className="alert-error">{error}</p>}
 
-          {activeTab === "today" ? (
-            <div className="admin-grid">
-              <section className="admin-focus-card">
-                <div><span className="admin-kicker">À valider</span><strong>{counts.review}</strong></div>
-                <p>Prospects dont le premier message reste à préparer ou à valider.</p>
-                <button className="button" type="button" onClick={() => setActiveTab("prospects")}>Voir les prospects à traiter</button>
-              </section>
-              <section className="admin-focus-card">
-                <div><span className="admin-kicker">Prêts à envoyer</span><strong>{counts.ready}</strong></div>
-                <p>Messages déjà validés : vous pouvez les ouvrir directement dans Gmail.</p>
-                <button className="button button-secondary" type="button" onClick={() => setActiveTab("emails")}>Ouvrir les messages prêts</button>
-              </section>
-              <section className="admin-focus-card">
-                <div><span className="admin-kicker">Suivis en cours</span><strong>{counts.followup + tasks.length}</strong></div>
-                <p>Contacts engagés et relances programmées pour éviter les oublis.</p>
-                <button className="button button-secondary" type="button" onClick={() => setActiveTab("prospects")}>Voir le suivi</button>
-              </section>
-
-              <section className="data-panel admin-wide">
-                <div className="section-heading"><div><h2>À faire ensuite</h2><p className="muted">Une fois un message envoyé, la relance apparaît automatiquement ici.</p></div></div>
-                <div className="admin-task-list">
-                  {tasks.length ? tasks.map((task) => <div className="admin-task" key={task.id}><div><strong>{task.title}</strong>{task.detail && <span>{task.detail}</span>}{task.due_at && <span>Prévu le {new Date(task.due_at).toLocaleDateString("fr-FR")}</span>}</div><button type="button" className="button button-secondary" onClick={() => void markTaskDone(task.id)}>Terminé</button></div>) : (
-                    <div className="empty-state" style={{ minHeight: 210 }}><div className="empty-icon">✓</div><h3>Aucune relance à faire pour le moment</h3><p>Validez d’abord les messages préparés. Une relance sera ajoutée après chaque premier contact envoyé.</p></div>
-                  )}
-                </div>
-              </section>
-            </div>
-          ) : (
-            <section className="data-panel">
-              <div className="section-heading"><div><h2>{activeTab === "emails" ? "Messages préparés" : activeTab === "pilots" ? "Pilotes actifs" : activeTab === "clients" ? "Clients" : "Pipeline commercial"}</h2><p className="muted">Cliquez sur une ligne pour voir le détail, valider le message ou l’ouvrir dans Gmail.</p></div><span className="count-label">{visibleProspects.length} résultat{visibleProspects.length > 1 ? "s" : ""}</span></div>
+          <section className="data-panel">
+              <div className="section-heading"><div><h2>{activeTab === "emails" ? "Messages préparés" : activeTab === "clients" ? "Clients" : "Pipeline commercial"}</h2><p className="muted">Cliquez sur une ligne pour voir le détail, valider le message ou l’ouvrir dans Gmail.</p></div><span className="count-label">{visibleProspects.length} résultat{visibleProspects.length > 1 ? "s" : ""}</span></div>
               {visibleProspects.length === 0 ? <div className="empty-state"><div className="empty-icon">✓</div><h3>Rien ici pour le moment</h3><p>Cette vue se remplira au fur et à mesure de la prospection et des pilotes.</p></div> : (
                 <>
                   <div className="admin-mobile-prospect-list">
@@ -434,11 +417,10 @@ export default function AdminPage() {
                 </>
               )}
             </section>
-          )}
         </section>
       </div>
 
-      {selected && <ProspectDrawer prospect={selected} saving={saving} copied={copiedId === selected.id} onCopy={() => void copyDraft(selected)} onClose={() => setSelectedId(null)} onSaveDraft={(subject, message) => saveDraft(selected.id, subject, message)} onStatus={(status) => void updateStatus(selected.id, status)} />}
+      {selected && <ProspectDrawer prospect={selected} saving={saving} copied={copiedId === selected.id} onCopy={() => void copyDraft(selected)} onClose={() => setSelectedId(null)} onSaveDraft={(subject, message) => saveDraft(selected.id, subject, message)} onStatus={(status) => void updateStatus(selected.id, status)} onDelete={() => void deleteProspect(selected.id)} />}
       {creating && <CreateProspectModal saving={saving} onClose={() => setCreating(false)} onSubmit={createProspect} />}
     </main>
   );
@@ -448,7 +430,7 @@ function AdminNav({ active, onClick, label, badge }: { active: boolean; onClick:
   return <button type="button" className={`admin-nav-item${active ? " admin-nav-active" : ""}`} onClick={onClick}><span>{label}</span><strong>{badge}</strong></button>;
 }
 
-function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onSaveDraft, onStatus }: { prospect: Prospect; saving: boolean; copied: boolean; onCopy: () => void; onClose: () => void; onSaveDraft: (subject: string, message: string) => Promise<boolean>; onStatus: (status: ProspectStatus) => void }) {
+function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onSaveDraft, onStatus, onDelete }: { prospect: Prospect; saving: boolean; copied: boolean; onCopy: () => void; onClose: () => void; onSaveDraft: (subject: string, message: string) => Promise<boolean>; onStatus: (status: ProspectStatus) => void; onDelete: () => void }) {
   const [draftSubject, setDraftSubject] = useState(prospect.draft_subject ?? "");
   const [draftEmail, setDraftEmail] = useState(prospect.draft_email ?? "");
   const [draftSaved, setDraftSaved] = useState(false);
@@ -480,12 +462,13 @@ function ProspectDrawer({ prospect, saving, copied, onCopy, onClose, onSaveDraft
         {draftSaved && <p className="alert-success" role="status">Message enregistré.</p>}
       </form>
     </div>
-    {prospect.draft_email && <div className="admin-drawer-section"><div className="admin-email-head"><h3>Message préparé</h3><span className={`badge ${prospect.status === "approved" ? "badge-success" : "badge-warning"}`}>{prospect.status === "approved" ? "Validé" : "À valider avant envoi"}</span></div>{prospect.draft_subject && <p><strong>Objet :</strong> {prospect.draft_subject}</p>}<pre className="admin-email-preview">{prospect.draft_email}</pre><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button className="button button-secondary" type="button" onClick={onCopy}>{copied ? "Message copié ✓" : "Copier le message"}</button>{prospect.status === "to_review" && <button className="button" type="button" disabled={saving} onClick={() => onStatus("approved")}>Valider ce message</button>}{prospect.status === "approved" && gmailUrl && <a className="button" href={gmailUrl} target="_blank" rel="noreferrer">Ouvrir dans Gmail</a>}{prospect.status === "approved" && <button className="button button-secondary" type="button" disabled={saving} onClick={() => onStatus("contacted")}>Marquer comme envoyé</button>}</div><p className="field-help">Rien n’est envoyé automatiquement. Vous gardez le contrôle du message final et de l’envoi.</p></div>}
+    {prospect.draft_email && <div className="admin-drawer-section"><div className="admin-email-head"><h3>Message préparé</h3><span className={`badge ${prospect.status === "approved" ? "badge-success" : "badge-warning"}`}>{prospect.status === "approved" ? "Validé" : "À valider avant envoi"}</span></div>{prospect.draft_subject && <p><strong>Objet :</strong> {prospect.draft_subject}</p>}<pre className="admin-email-preview">{prospect.draft_email}</pre><div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button className="button button-secondary" type="button" onClick={onCopy}>{copied ? "Message copié ✓" : "Copier le message"}</button>{prospect.status === "to_review" && <button className="button" type="button" disabled={saving} onClick={() => onStatus("approved")}>Valider ce message</button>}{prospect.status === "approved" && gmailUrl && <a className="button" href={gmailUrl} target="_blank" rel="noreferrer">Ouvrir l’email préparé</a>}{prospect.status === "approved" && <button className="button button-secondary" type="button" disabled={saving} onClick={() => onStatus("contacted")}>Marquer comme envoyé</button>}</div><p className="field-help">Rien n’est envoyé automatiquement. Vous gardez le contrôle du message final et de l’envoi.</p></div>}
     {prospect.notes && <div className="admin-drawer-section"><h3>Note interne</h3><p className="muted">{prospect.notes}</p></div>}
     {prospect.next_action && <div className="admin-next-action"><span>Prochaine action</span><strong>{prospect.next_action}</strong>{prospect.next_action_at && <small>Prévue le {new Date(prospect.next_action_at).toLocaleDateString("fr-FR")}</small>}</div>}
+    <div className="admin-drawer-section"><button className="button admin-delete-button" type="button" disabled={saving} onClick={onDelete}>Supprimer le prospect</button></div>
   </aside></div>;
 }
 
 function CreateProspectModal({ saving, onClose, onSubmit }: { saving: boolean; onClose: () => void; onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
-  return <div className="admin-overlay" onMouseDown={onClose}><form className="admin-modal" onSubmit={onSubmit} onMouseDown={(e) => e.stopPropagation()}><div className="admin-drawer-head"><div><p className="eyebrow">Prospection</p><h2>Ajouter un prospect</h2></div><button className="text-button" type="button" onClick={onClose}>Fermer</button></div><label className="field-label">Entreprise<input className="field" name="company" required /></label><label className="field-label">Contact<input className="field" name="contact" /></label><div className="admin-form-columns"><label className="field-label">Email<input className="field" name="email" type="email" /></label><label className="field-label">Ville<input className="field" name="city" /></label></div><label className="field-label">Activité<input className="field" name="activity" placeholder="Ex. Plomberie et chauffage" /></label><label className="field-label">Pourquoi il est intéressant<textarea className="field" name="why" rows={4} /></label><button className="button" type="submit" disabled={saving}>{saving ? "Ajout…" : "Ajouter à la liste"}</button></form></div>;
+  return <div className="admin-overlay" onMouseDown={onClose}><form className="admin-modal" onSubmit={onSubmit} onMouseDown={(e) => e.stopPropagation()}><div className="admin-drawer-head"><div><p className="eyebrow">Prospection</p><h2>Ajouter un prospect</h2></div><button className="text-button" type="button" onClick={onClose}>Fermer</button></div><label className="field-label">Entreprise<input className="field" name="company" required /></label><label className="field-label">Nom du contact<input className="field" name="contact" /></label><div className="admin-form-columns"><label className="field-label">Email<input className="field" name="email" type="email" /></label><label className="field-label">Ville<input className="field" name="city" /></label></div><label className="field-label">Activité<input className="field" name="activity" placeholder="Ex. Plomberie et chauffage" /></label><label className="field-label">Pourquoi il est intéressant<textarea className="field" name="why" rows={4} /></label><button className="button" type="submit" disabled={saving}>{saving ? "Ajout…" : "Ajouter à la liste"}</button></form></div>;
 }

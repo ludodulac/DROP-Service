@@ -36,14 +36,13 @@ test("email badge and email results use the same business filter", () => {
   assert.match(page, /label="Emails à valider" badge=\{\`\$\{counts\.emailMessages\} message/);
 });
 
-test("navigation badges expose their meaning instead of bare ambiguous numbers", () => {
-  assert.match(page, /label="Aujourd'hui" badge=\{\`\$\{counts\.today\} action/);
+test("simplified admin navigation exposes only the useful workflow views", () => {
+  assert.match(page, /useState<"prospects" \| "emails" \| "clients">\("prospects"\)/);
   assert.match(page, /label="Prospects" badge=\{\`\$\{prospects\.length\} total\`\}/);
-  assert.match(page, /label="Pilotes" badge=\{String\(counts\.pilots\)\}/);
+  assert.match(page, /label="Emails à valider" badge=/);
+  assert.match(page, /label="Clients" badge=/);
+  assert.doesNotMatch(page, /label="Aujourd'hui"/);
+  assert.doesNotMatch(page, /label="Pilotes"/);
   assert.match(page, /function AdminNav\(\{ active, onClick, label, badge \}/);
   assert.match(page, /<strong>\{badge\}<\/strong>/);
-});
-
-test("today badge includes every category represented on the Today view", () => {
-  assert.match(page, /today:\s*review \+ ready \+ followup \+ tasks\.length/);
 });
