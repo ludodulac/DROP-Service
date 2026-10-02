@@ -1,29 +1,36 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import ts from "typescript";
+import twilio from "twilio";
 
-const source = readFileSync("src/lib/telephony/twilio-signature.ts", "utf8");
-const compiled = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
-}).outputText.replace(/^import type[^;]+;\s*/m, "");
-const mod = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
+const adapter = readFileSync("src/lib/telephony/twilio.ts", "utf8");
 
-test("Twilio signature validator matches Twilio's documented HMAC-SHA1 vector", () => {
-  const url = "https://example.com/myapp.php?foo=1&bar=2";
+test("Twilio official SDK validates the form signature method", () => {
+  const authToken = "test_auth_token";
+  const url = "https://example.com/api/telephony/twilio/voice/incoming";
   const params = {
-    CallSid: "CA1234567890ABCDE",
-    Caller: "+14158675310",
-    Digits: "1234",
-    From: "+14158675310",
-    To: "+18005551212",
+    CallSid: "CA0123456789abcdef0123456789abcdef",
+    From: "+33123456789",
+    To: "+33987654321",
   };
-  assert.equal(mod.getExpectedTwilioSignature("12345", url, params), "L/OH5YylLD5NRKLltdqwSvS0BnU=");
-  assert.equal(mod.validateTwilioSignature("12345", "L/OH5YylLD5NRKLltdqwSvS0BnU=", url, params), true);
-  assert.equal(mod.validateTwilioSignature("12345", "invalid", url, params), false);
+
+  const signature = twilio.getExpectedTwilioSignature(
+    authToken,
+    url,
+    params,
+  );
+
+  assert.equal(
+    twilio.validateRequest(authToken, signature, url, params),
+    true,
+  );
+  assert.equal(
+    twilio.validateRequest(authToken, "invalid", url, params),
+    false,
+  );
 });
 
-test("signature validation includes every received form parameter", () => {
-  assert.match(source, /Object\.keys\(params\)[\s\S]*?\.sort\(\)/);
-  assert.match(source, /formData\.entries\(\)/);
+test("BRIF adapter delegates X-Twilio-Signature validation to official SDK", () => {
+  assert.match(adapter, /twilio\.validateRequest\(/);
+  assert.doesNotMatch(adapter, /createHmac|sha1/i);
 });

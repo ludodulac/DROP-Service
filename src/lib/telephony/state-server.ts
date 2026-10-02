@@ -1,78 +1,170 @@
 import "server-only";
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://nczdadkyysrxxcsnsrrn.supabase.co";
+import { createPrivilegedSupabaseClient } from "@/lib/supabase-privileged-server";
+import type {
+  TelephonyCallReason,
+  TelephonyCallStatus,
+  TelephonySmsStatus,
+} from "./types";
 
-async function callTelephonyState<T>(action: string, payload: Record<string, unknown>) {
-  const oidcToken = process.env.VERCEL_OIDC_TOKEN;
-  if (!oidcToken) throw new Error("vercel_oidc_token_missing");
-
-  const response = await fetch(`${supabaseUrl}/functions/v1/brif-telephony-state`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${oidcToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ action, ...payload }),
-    cache: "no-store",
-  });
-
-  const result: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const code =
-      typeof result === "object" &&
-      result !== null &&
-      "error" in result &&
-      typeof (result as { error?: unknown }).error === "string"
-        ? (result as { error: string }).error
-        : `telephony_state_failed_${response.status}`;
-    throw new Error(code);
-  }
-  return result as T;
+function firstRow<T>(value: unknown): T | null {
+  if (Array.isArray(value)) return (value[0] as T | undefined) ?? null;
+  return (value as T | null) ?? null;
 }
 
-export type IncomingCallState = {
-  callId: string;
-  artisanId: string;
-  artisanSlug: string;
-  artisanPhone: string;
+async function callTelephonyRpc<T>(
+  functionName: string,
+  args: Record<string, unknown>,
+) {
+  const supabase = createPrivilegedSupabaseClient();
+  if (!supabase) {
+    throw new Error("telephony_database_not_configured");
+  }
+
+  const { data, error } = await supabase.rpc(functionName, args);
+  if (error) {
+    throw new Error("telephony_database_operation_failed");
+  }
+
+  const row = firstRow<T>(data);
+  if (!row) {
+    throw new Error("telephony_database_result_missing");
+  }
+
+  return row;
+}
+
+type IncomingCallRow = {
+  call_id: string;
+  artisan_id: string;
+  artisan_slug: string;
+  destination_phone: string;
 };
 
 export async function registerIncomingCall(input: {
   provider: string;
-  providerCallSid: string;
-  slug: string;
-  callerPhone: string;
-  providerNumber: string;
+  providerCallId: string;
+  artisanSlug: string;
+  callerPhone: string | null;
+  calledPhone: string;
+  smsLink: string;
 }) {
-  return callTelephonyState<IncomingCallState>("register_incoming", input);
+  const row = await callTelephonyRpc<IncomingCallRow>(
+    "drop_service_telephony_register_incoming",
+    {
+      p_provider: input.provider,
+      p_provider_call_id: input.providerCallId,
+      p_artisan_slug: input.artisanSlug,
+      p_caller_phone: input.callerPhone,
+      p_called_phone: input.calledPhone,
+      p_sms_link: input.smsLink,
+    },
+  );
+
+  return {
+    callId: row.call_id,
+    artisanId: row.artisan_id,
+    artisanSlug: row.artisan_slug,
+    destinationPhone: row.destination_phone,
+  };
 }
 
-export type CompleteCallState = {
-  callId: string;
-  smsState: "NOT_PREPARED" | "NOT_REQUIRED" | "PREPARED" | "SUPPRESSED" | "SENT" | "FAILED";
-  callerPhone: string | null;
+type CompleteCallRow = {
+  call_id: string;
+  call_status: TelephonyCallStatus;
+  sms_status: TelephonySmsStatus;
+  caller_phone: string | null;
+  sms_link: string | null;
 };
 
 export async function completeTelephonyCall(input: {
   provider: string;
-  providerCallSid: string;
-  providerDialCallSid: string | null;
-  outcome: "ANSWERED" | "MISSED" | "FAILED";
-  reason: "COMPLETED" | "NO_ANSWER" | "BUSY" | "PROVIDER_FAILED" | "CANCELED" | "UNKNOWN";
+  providerCallId: string;
+  providerLegCallId: string | null;
+  callStatus: Exclude<TelephonyCallStatus, "PENDING">;
+  callReason: Exclude<TelephonyCallReason, "PENDING">;
   providerStatus: string;
-  smsLink: string;
   smsCooldownMinutes: number;
 }) {
-  return callTelephonyState<CompleteCallState>("complete_call", input);
+  const row = await callTelephonyRpc<CompleteCallRow>(
+    "drop_service_telephony_complete_call",
+    {
+      p_provider: input.provider,
+      p_provider_call_id: input.providerCallId,
+      p_provider_leg_call_id: input.providerLegCallId,
+      p_call_status: input.callStatus,
+      p_call_reason: input.callReason,
+      p_provider_status: input.providerStatus,
+      p_sms_cooldown_minutes: input.smsCooldownMinutes,
+    },
+  );
+
+  return {
+    callId: row.call_id,
+    callStatus: row.call_status,
+    smsStatus: row.sms_status,
+    callerPhone: row.caller_phone,
+    smsLink: row.sms_link,
+  };
+}
+
+type ClaimSmsRow = {
+  call_id: string;
+  claimed: boolean;
+  caller_phone: string | null;
+  sms_link: string | null;
+};
+
+export async function claimTelephonySms(input: {
+  provider: string;
+  providerCallId: string;
+}) {
+  const row = await callTelephonyRpc<ClaimSmsRow>(
+    "drop_service_telephony_claim_sms",
+    {
+      p_provider: input.provider,
+      p_provider_call_id: input.providerCallId,
+    },
+  );
+
+  return {
+    callId: row.call_id,
+    claimed: row.claimed,
+    callerPhone: row.caller_phone,
+    smsLink: row.sms_link,
+  };
 }
 
 export async function markTelephonySms(input: {
   provider: string;
-  providerCallSid: string;
-  smsState: "SENT" | "FAILED";
+  providerCallId: string;
+  smsStatus: "SENT" | "FAILED";
   providerMessageId?: string;
+  errorMessage?: string;
 }) {
-  return callTelephonyState<{ callId: string; smsState: string }>("mark_sms", input);
+  return callTelephonyRpc<{ call_id: string; sms_status: TelephonySmsStatus }>(
+    "drop_service_telephony_mark_sms",
+    {
+      p_provider: input.provider,
+      p_provider_call_id: input.providerCallId,
+      p_sms_status: input.smsStatus,
+      p_provider_message_id: input.providerMessageId ?? null,
+      p_error_message: input.errorMessage ?? null,
+    },
+  );
+}
+
+export async function recordTelephonyError(input: {
+  provider: string;
+  providerCallId: string;
+  errorMessage: string;
+}) {
+  return callTelephonyRpc<{ call_id: string }>(
+    "drop_service_telephony_record_error",
+    {
+      p_provider: input.provider,
+      p_provider_call_id: input.providerCallId,
+      p_error_message: input.errorMessage,
+    },
+  );
 }

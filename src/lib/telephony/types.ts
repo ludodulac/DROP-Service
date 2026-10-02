@@ -1,4 +1,9 @@
-export type TelephonyCallOutcome = "PENDING" | "ANSWERED" | "MISSED" | "FAILED";
+export type TelephonyCallStatus =
+  | "PENDING"
+  | "ANSWERED"
+  | "MISSED"
+  | "FAILED"
+  | "CANCELED";
 
 export type TelephonyCallReason =
   | "PENDING"
@@ -9,16 +14,17 @@ export type TelephonyCallReason =
   | "CANCELED"
   | "UNKNOWN";
 
-export type TelephonySmsState =
+export type TelephonySmsStatus =
   | "NOT_PREPARED"
   | "NOT_REQUIRED"
   | "PREPARED"
   | "SUPPRESSED"
+  | "SENDING"
   | "SENT"
   | "FAILED";
 
 export type NormalizedDialResult = {
-  outcome: Exclude<TelephonyCallOutcome, "PENDING">;
+  status: Exclude<TelephonyCallStatus, "PENDING">;
   reason: Exclude<TelephonyCallReason, "PENDING">;
   providerStatus: string;
 };

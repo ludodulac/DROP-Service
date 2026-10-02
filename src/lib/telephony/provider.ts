@@ -9,6 +9,7 @@ export function getTelephonyProvider(): {
   config: ReturnType<typeof getTelephonyRuntimeConfig>;
 } {
   const config = getTelephonyRuntimeConfig();
+
   return {
     config,
     adapter: new TwilioTelephonyAdapter(
