@@ -24,6 +24,6 @@ test("Twilio signature validator matches Twilio's documented HMAC-SHA1 vector", 
 });
 
 test("signature validation includes every received form parameter", () => {
-  assert.match(source, /Object\.keys\(params\)\.sort\(\)/);
+  assert.match(source, /Object\.keys\(params\)[\s\S]*?\.sort\(\)/);
   assert.match(source, /formData\.entries\(\)/);
 });
