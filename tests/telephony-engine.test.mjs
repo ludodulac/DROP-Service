@@ -16,8 +16,10 @@ const env = readFileSync(".env.example", "utf8");
 test("telephony routes use a provider abstraction and validate signatures before mutation", () => {
   assert.match(provider, /TelephonyProviderAdapter/);
   assert.match(provider, /TwilioTelephonyAdapter/);
-  assert.ok(incoming.indexOf("adapter.validateWebhook") < incoming.indexOf("registerIncomingCall"));
-  assert.ok(dial.indexOf("adapter.validateWebhook") < dial.indexOf("completeTelephonyCall"));
+  const incomingHandler = incoming.slice(incoming.indexOf("export async function POST"));
+  const dialHandler = dial.slice(dial.indexOf("export async function POST"));
+  assert.ok(incomingHandler.indexOf("adapter.validateWebhook") < incomingHandler.indexOf("registerIncomingCall"));
+  assert.ok(dialHandler.indexOf("adapter.validateWebhook") < dialHandler.indexOf("completeTelephonyCall"));
 });
 
 test("incoming TwiML dials artisan phone and declares the result callback", () => {
